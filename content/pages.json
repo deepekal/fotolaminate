@@ -1,0 +1,967 @@
+[
+  {
+    "pageId": "home",
+    "path": "/",
+    "name": "Home",
+    "seo": {
+      "title": "Home",
+      "description": "Industrial photo lamination machines and finishing solutions by Foto Laminate Precision.",
+      "keywords": [
+        "home",
+        "photo lamination",
+        "industrial machines"
+      ]
+    },
+    "sections": [
+      {
+        "id": "hero",
+        "title": "Home Hero",
+        "type": "standard",
+        "fields": [
+          {
+            "key": "h1",
+            "label": "Hero heading",
+            "value": "Leading Manufacturer of Photo Lamination Machine at an Affordable Price in Delhi, India"
+          },
+          {
+            "key": "p",
+            "label": "Hero summary",
+            "value": "Discover top-quality photo lamination machines designed for long-lasting performance and professional results. Trusted across India for reliability, durability, and precision for industrial, retail, public sector, and business use."
+          }
+        ]
+      },
+      {
+        "id": "about",
+        "title": "About Section",
+        "type": "standard",
+        "fields": [
+          {
+            "key": "h2",
+            "label": "Section heading",
+            "value": "About Foto Laminate"
+          },
+          {
+            "key": "p",
+            "label": "Paragraph one",
+            "value": "M/S MELA RAM & SONS is a well-known name in photographers and photo goods supplies. Our journey began in Peshawar Cantt and expanded across India to serve major cities with professional photo solutions."
+          },
+          {
+            "key": "p",
+            "label": "Paragraph two",
+            "value": "Since progressing from photo printing to photo lamination, we have specialised in photofinishing equipment and allied materials, especially cold lamination product lines. Today, we support thousands of businesses with durable machines, dependable service, and factory-direct value."
+          }
+        ]
+      },
+      {
+        "id": "why-us",
+        "title": "Why Choose Us",
+        "type": "standard",
+        "fields": [
+          {
+            "key": "h2",
+            "label": "Section heading",
+            "value": "Why Choose Foto Laminate?"
+          },
+          {
+            "key": "h3",
+            "label": "Reason one title",
+            "value": "High Precision Engineering"
+          },
+          {
+            "key": "p",
+            "label": "Reason one description",
+            "value": "CNC-machined components for flawless lamination results."
+          },
+          {
+            "key": "h3",
+            "label": "Reason two title",
+            "value": "Durable Industrial Build"
+          },
+          {
+            "key": "p",
+            "label": "Reason two description",
+            "value": "Heavy-gauge steel construction built to last decades."
+          },
+          {
+            "key": "h3",
+            "label": "Reason three title",
+            "value": "Affordable Pricing"
+          },
+          {
+            "key": "p",
+            "label": "Reason three description",
+            "value": "Factory-direct pricing with no middleman markup."
+          },
+          {
+            "key": "h3",
+            "label": "Reason four title",
+            "value": "Nationwide Supply"
+          },
+          {
+            "key": "p",
+            "label": "Reason four description",
+            "value": "Delivery and installation across all Indian states."
+          },
+          {
+            "key": "h3",
+            "label": "Reason five title",
+            "value": "Easy Maintenance"
+          },
+          {
+            "key": "p",
+            "label": "Reason five description",
+            "value": "Modular design with readily available spare parts."
+          },
+          {
+            "key": "h3",
+            "label": "Reason six title",
+            "value": "Customer Support"
+          },
+          {
+            "key": "p",
+            "label": "Reason six description",
+            "value": "Dedicated technical support and after-sales service."
+          }
+        ]
+      },
+      {
+        "id": "applications",
+        "title": "Applications",
+        "type": "standard",
+        "fields": [
+          {
+            "key": "h2",
+            "label": "Section heading",
+            "value": "Where Our Machines Are Used"
+          },
+          {
+            "key": "h3",
+            "label": "Application one title",
+            "value": "Photo Studios"
+          },
+          {
+            "key": "p",
+            "label": "Application one description",
+            "value": "Professional photo finishing and preservation."
+          },
+          {
+            "key": "h3",
+            "label": "Application two title",
+            "value": "Printing Shops"
+          },
+          {
+            "key": "p",
+            "label": "Application two description",
+            "value": "High-volume commercial print lamination."
+          },
+          {
+            "key": "h3",
+            "label": "Application three title",
+            "value": "Retail Stores"
+          },
+          {
+            "key": "p",
+            "label": "Application three description",
+            "value": "Menu cards, posters, and display materials."
+          },
+          {
+            "key": "h3",
+            "label": "Application four title",
+            "value": "Government Offices"
+          },
+          {
+            "key": "p",
+            "label": "Application four description",
+            "value": "Document protection and archival lamination."
+          },
+          {
+            "key": "h3",
+            "label": "Application five title",
+            "value": "Industrial Printing Units"
+          },
+          {
+            "key": "p",
+            "label": "Application five description",
+            "value": "Packaging and industrial label lamination."
+          },
+          {
+            "key": "h3",
+            "label": "Application six title",
+            "value": "ID Card Manufacturing"
+          },
+          {
+            "key": "p",
+            "label": "Application six description",
+            "value": "Secure lamination for identity cards."
+          }
+        ]
+      },
+      {
+        "id": "manufacturing",
+        "title": "Manufacturing",
+        "type": "standard",
+        "fields": [
+          {
+            "key": "h2",
+            "label": "Section heading",
+            "value": "Manufacturing & Quality"
+          },
+          {
+            "key": "p",
+            "label": "Body copy",
+            "value": "Every Foto Laminate machine is manufactured in our Delhi facility using industrial-grade materials and precision engineering processes. We control every stage of production to ensure unmatched quality."
+          },
+          {
+            "key": "h3",
+            "label": "Step one",
+            "value": "In-house Design & Engineering"
+          },
+          {
+            "key": "h3",
+            "label": "Step two",
+            "value": "CNC Precision Machining"
+          },
+          {
+            "key": "h3",
+            "label": "Step three",
+            "value": "Industrial-Grade Material Sourcing"
+          },
+          {
+            "key": "h3",
+            "label": "Step four",
+            "value": "Assembly & Integration"
+          },
+          {
+            "key": "h3",
+            "label": "Step five",
+            "value": "Quality Testing & Calibration"
+          },
+          {
+            "key": "h3",
+            "label": "Step six",
+            "value": "Final Inspection & Packaging"
+          }
+        ]
+      },
+      {
+        "id": "growing-company",
+        "title": "Growing Company",
+        "type": "standard",
+        "fields": [
+          {
+            "key": "h1",
+            "label": "Section heading",
+            "value": "We are a Growing Company"
+          },
+          {
+            "key": "p",
+            "label": "Section summary",
+            "value": "Foto Laminate Precision is a manufacturing pioneer in India."
+          },
+          {
+            "key": "h2",
+            "label": "Stat value one",
+            "value": "25+"
+          },
+          {
+            "key": "p",
+            "label": "Stat label one",
+            "value": "Years Experience"
+          },
+          {
+            "key": "h2",
+            "label": "Stat value two",
+            "value": "5000+"
+          },
+          {
+            "key": "p",
+            "label": "Stat label two",
+            "value": "Machines Sold"
+          },
+          {
+            "key": "h2",
+            "label": "Stat value three",
+            "value": "100+"
+          },
+          {
+            "key": "p",
+            "label": "Stat label three",
+            "value": "Corporate Print Houses"
+          },
+          {
+            "key": "h2",
+            "label": "Stat value four",
+            "value": "250+"
+          },
+          {
+            "key": "p",
+            "label": "Stat label four",
+            "value": "Repeat Orders"
+          }
+        ]
+      },
+      {
+        "id": "quality-clients",
+        "title": "Quality & Clients",
+        "type": "standard",
+        "fields": [
+          {
+            "key": "h2",
+            "label": "Section heading",
+            "value": "Certifications & Recognitions"
+          },
+          {
+            "key": "p",
+            "label": "Section summary",
+            "value": "Our machines are backed by industry certifications and years of customer trust across photo studios, printing houses, and government clients."
+          }
+        ]
+      },
+      {
+        "id": "quality-assurance",
+        "title": "Quality Assurance",
+        "type": "standard",
+        "fields": [
+          {
+            "key": "h2",
+            "label": "Section heading",
+            "value": "Quality Assurance by Codealam"
+          },
+          {
+            "key": "p",
+            "label": "Section summary",
+            "value": "Our commitment to precision is backed by rigorous standards and industry-recognized certifications. We ensure every machine passing through our facility meets the Codealam quality benchmark."
+          },
+          {
+            "key": "h3",
+            "label": "Quality point one",
+            "value": "Verified Client Certifications and Success Stories"
+          },
+          {
+            "key": "h3",
+            "label": "Quality point two",
+            "value": "Standardized Quality Control (QC) Protocols"
+          },
+          {
+            "key": "h3",
+            "label": "Quality point three",
+            "value": "Authentic Component Sourcing and Verification"
+          },
+          {
+            "key": "h3",
+            "label": "Quality point four",
+            "value": "Performance Benchmarking for Industrial Durability"
+          }
+        ]
+      },
+      {
+        "id": "product-categories",
+        "title": "Product Categories",
+        "type": "standard",
+        "fields": [
+          {
+            "key": "h2",
+            "label": "Section heading",
+            "value": "Explore Our Product Categories"
+          },
+          {
+            "key": "p",
+            "label": "Section summary",
+            "value": "Browse our machine categories by application, from photo lamination machines to specialty printing and finishing equipment."
+          }
+        ]
+      },
+      {
+        "id": "featured-products",
+        "title": "Featured Products",
+        "type": "standard",
+        "fields": [
+          {
+            "key": "h2",
+            "label": "Section heading",
+            "value": "Featured Products"
+          },
+          {
+            "key": "p",
+            "label": "Section summary",
+            "value": "Browse a curated selection of our most popular laminating machines and finishing tools."
+          }
+        ]
+      },
+      {
+        "id": "latest-videos",
+        "title": "Latest Videos",
+        "type": "standard",
+        "fields": [
+          {
+            "key": "h2",
+            "label": "Section heading",
+            "value": "Latest videos"
+          },
+          {
+            "key": "p",
+            "label": "Section summary",
+            "value": "Watch product demos, manufacturing highlights, and customer applications."
+          }
+        ]
+      },
+      {
+        "id": "latest-blogs",
+        "title": "Latest Blogs",
+        "type": "standard",
+        "fields": [
+          {
+            "key": "h2",
+            "label": "Section heading",
+            "value": "Our Latest Blog"
+          },
+          {
+            "key": "p",
+            "label": "Section summary",
+            "value": "Tips, guides, and updates from the world of photo lamination and finishing."
+          }
+        ]
+      },
+      {
+        "id": "testimonials",
+        "title": "Testimonials",
+        "type": "standard",
+        "fields": [
+          {
+            "key": "h2",
+            "label": "Section heading",
+            "value": "What Our Clients Say"
+          },
+          {
+            "key": "p",
+            "label": "Section summary",
+            "value": "Read feedback from photography studios, print houses, and industrial clients who trust our machines."
+          }
+        ]
+      },
+      {
+        "id": "faq",
+        "title": "FAQ",
+        "type": "faq",
+        "faqs": [
+          {
+            "q": "What types of lamination machines do you manufacture?",
+            "a": "We manufacture a wide range including Photo Lamination Machines, Roll Lamination Machines, Hot Lamination Machines, Cold Lamination Machines, and Industrial Lamination Machines for commercial use."
+          },
+          {
+            "q": "Do you supply machines across India?",
+            "a": "Yes, we deliver and install lamination machines across all 28 states of India. We also provide remote technical support for all locations."
+          },
+          {
+            "q": "Do you provide installation support?",
+            "a": "Absolutely. Our trained technicians provide on-site installation, training, and commissioning for all machines purchased from us."
+          },
+          {
+            "q": "What warranty do you offer?",
+            "a": "We offer a comprehensive 1-year warranty covering manufacturing defects, with extended warranty options available. Spare parts are readily available for all models."
+          },
+          {
+            "q": "Can I get a customized machine for specific requirements?",
+            "a": "Yes, we offer customization options for lamination width, speed, heating systems, and other specifications based on your business needs."
+          }
+        ]
+      },
+      {
+        "id": "catalogue-section",
+        "title": "Product Catalogue",
+        "type": "standard",
+        "fields": [
+          {
+            "key": "h2",
+            "label": "Section heading",
+            "value": "Download Our Full Product Catalogue"
+          },
+          {
+            "key": "p",
+            "label": "Section summary",
+            "value": "Browse our complete range of photo lamination machines, album making machines, UV coating machines, and accessories. The catalogue includes specifications, dimensions, and ordering information."
+          }
+        ]
+      },
+      {
+        "id": "contact",
+        "title": "Contact",
+        "type": "standard",
+        "fields": [
+          {
+            "key": "h1",
+            "label": "Section heading",
+            "value": "Contact & Inquiry"
+          },
+          {
+            "key": "p",
+            "label": "Section summary",
+            "value": "Share your requirement and we will respond with pricing, specifications, or service guidance."
+          }
+        ]
+      }
+    ],
+    "schemas": [],
+    "faqs": []
+  },
+  {
+    "pageId": "about",
+    "path": "/about",
+    "name": "About",
+    "seo": {
+      "title": "About",
+      "description": "Learn about Foto Laminate Precision, our manufacturing expertise, and our commitment to quality.",
+      "keywords": [
+        "about",
+        "manufacturer",
+        "lamination machines"
+      ]
+    },
+    "sections": [
+      {
+        "id": "hero",
+        "title": "About Foto Laminate",
+        "type": "standard",
+        "fields": [
+          {
+            "key": "h1",
+            "label": "Page heading",
+            "value": "About Foto Laminate"
+          },
+          {
+            "key": "p",
+            "label": "Hero summary",
+            "value": "M/S MELA RAM & SONS is a well-known name in photographers and photo goods supplies. Our journey began in Peshawar Cantt and expanded across India to serve major cities with professional photo solutions."
+          }
+        ]
+      },
+      {
+        "id": "story",
+        "title": "Our story",
+        "type": "standard",
+        "fields": [
+          {
+            "key": "h2",
+            "label": "Section heading",
+            "value": "What you can expect"
+          },
+          {
+            "key": "p",
+            "label": "Section paragraph",
+            "value": "Since progressing from photo printing to photo lamination, we have specialised in photofinishing equipment and allied materials, especially cold lamination product lines. Today, we support thousands of businesses with durable machines, dependable service, and factory-direct value."
+          }
+        ]
+      }
+    ],
+    "schemas": [],
+    "faqs": [
+      {
+        "q": "holla",
+        "a": "yoohooo"
+      }
+    ]
+  },
+  {
+    "pageId": "contact",
+    "path": "/contact",
+    "name": "Contact",
+    "seo": {
+      "title": "Contact",
+      "description": "Contact Foto Laminate Precision for enquiries, support, and product information.",
+      "keywords": [
+        "contact",
+        "enquiry",
+        "support"
+      ]
+    },
+    "sections": [
+      {
+        "id": "hero",
+        "title": "Get in touch",
+        "fields": [
+          {
+            "key": "h1",
+            "label": "Page heading",
+            "value": "Sales inquiries, service requests, and support"
+          },
+          {
+            "key": "p",
+            "label": "Hero summary",
+            "value": "Share your requirement and we will respond with pricing, specifications, or service guidance."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "pageId": "catalogue",
+    "path": "/catalogue",
+    "name": "Catalogue",
+    "seo": {
+      "title": "Catalogue",
+      "description": "Download the product catalogue for Foto Laminate Precision.",
+      "keywords": [
+        "catalogue",
+        "brochure",
+        "products"
+      ]
+    },
+    "sections": [
+      {
+        "id": "hero",
+        "title": "Product catalogue",
+        "type": "standard",
+        "fields": [
+          {
+            "key": "h1",
+            "label": "Page heading",
+            "value": "Product catalogue"
+          },
+          {
+            "key": "p",
+            "label": "Hero summary",
+            "value": "Download the latest catalogue. For the most accurate pricing and availability, contact us with your size and volume."
+          }
+        ]
+      },
+      {
+        "id": "growing",
+        "title": "Growing with you",
+        "type": "standard",
+        "fields": [
+          {
+            "key": "h2",
+            "label": "Section heading",
+            "value": "We Are a Growing Manufacturing Company"
+          },
+          {
+            "key": "p",
+            "label": "Body copy",
+            "value": "Trusted by thousands of businesses across the Indian subcontinent, we deliver industrial-grade lamination solutions built for good value and reliability."
+          }
+        ]
+      }
+    ],
+    "schemas": [],
+    "faqs": [
+      {
+        "q": "yooo",
+        "a": "woohooo"
+      }
+    ]
+  },
+  {
+    "pageId": "certificates",
+    "path": "/certificates",
+    "name": "Certificates",
+    "seo": {
+      "title": "Certificates",
+      "description": "Certificates and compliance documents for Foto Laminate Precision.",
+      "keywords": [
+        "certificates",
+        "compliance"
+      ]
+    },
+    "sections": [
+      {
+        "id": "hero",
+        "title": "Certificates",
+        "fields": [
+          {
+            "key": "h1",
+            "label": "Page heading",
+            "value": "Certificates and compliance"
+          },
+          {
+            "key": "p",
+            "label": "Hero summary",
+            "value": "View our product certifications, quality approvals, and compliance documents for Foto Laminate Precision."
+          }
+        ]
+      },
+      {
+        "id": "quality",
+        "title": "Quality assurance",
+        "fields": [
+          {
+            "key": "h2",
+            "label": "Section heading",
+            "value": "Quality certifications"
+          },
+          {
+            "key": "p",
+            "label": "Body copy",
+            "value": "Our products are manufactured with a focus on reliability and compliance, backed by certifications that demonstrate quality and safety."
+          }
+        ]
+      },
+      {
+        "id": "certificate-gallery",
+        "title": "Our certificates",
+        "fields": [
+          {
+            "key": "image",
+            "label": "Certificate 1",
+            "value": "/assets/Assets/Certificate/Certificate1.png"
+          },
+          {
+            "key": "image",
+            "label": "Certificate 3",
+            "value": "/assets/Assets/Certificate/Certificate3.png"
+          },
+          {
+            "key": "image",
+            "label": "Certificate 7",
+            "value": "/assets/Assets/Certificate/Certificate7.png"
+          }
+        ]
+      }
+    ],
+    "schemas": [],
+    "faqs": [
+      {
+        "q": "y",
+        "a": "s"
+      }
+    ]
+  },
+  {
+    "pageId": "awards",
+    "path": "/awards",
+    "name": "Awards",
+    "seo": {
+      "title": "Awards",
+      "description": "Awards and recognitions of Foto Laminate Precision.",
+      "keywords": [
+        "awards",
+        "recognition"
+      ]
+    },
+    "sections": [
+      {
+        "id": "hero",
+        "title": "Awards",
+        "fields": [
+          {
+            "key": "h1",
+            "label": "Page heading",
+            "value": "Awards and recognition"
+          },
+          {
+            "key": "p",
+            "label": "Hero summary",
+            "value": "We are proud to receive recognition for our product quality, service excellence, and manufacturing performance."
+          }
+        ]
+      },
+      {
+        "id": "achievements",
+        "title": "Achievements",
+        "fields": [
+          {
+            "key": "h2",
+            "label": "Section heading",
+            "value": "Our achievements"
+          },
+          {
+            "key": "p",
+            "label": "Body copy",
+            "value": "Awards highlight our commitment to manufacturing innovation, reliability, and customer satisfaction in the photo lamination sector."
+          }
+        ]
+      },
+      {
+        "id": "award-gallery",
+        "title": "Awards gallery",
+        "fields": [
+          {
+            "key": "image",
+            "label": "Award 1",
+            "value": "/assets/Assets/Awards/Award1.png"
+          },
+          {
+            "key": "image",
+            "label": "Award 2",
+            "value": "/assets/Assets/Awards/Award2.png"
+          },
+          {
+            "key": "image",
+            "label": "Award 3",
+            "value": "/assets/Assets/Awards/Award3.png"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "pageId": "exhibition-photos",
+    "path": "/exhibition-photos",
+    "name": "Exhibition Photos",
+    "seo": {
+      "title": "Exhibition Photos",
+      "description": "Exhibition photos and event highlights from Foto Laminate Precision.",
+      "keywords": [
+        "exhibition",
+        "photos",
+        "events"
+      ]
+    },
+    "sections": [
+      {
+        "id": "hero",
+        "title": "Exhibition highlights",
+        "fields": [
+          {
+            "key": "h1",
+            "label": "Page heading",
+            "value": "Exhibition Photos"
+          },
+          {
+            "key": "p",
+            "label": "Hero summary",
+            "value": "Browse photos from our product exhibitions, trade events, and manufacturing demonstrations."
+          }
+        ]
+      },
+      {
+        "id": "events",
+        "title": "Event highlights",
+        "fields": [
+          {
+            "key": "h2",
+            "label": "Section heading",
+            "value": "See our latest events"
+          },
+          {
+            "key": "p",
+            "label": "Body copy",
+            "value": "From trade shows to product demos, our exhibition gallery showcases the work and machinery behind Foto Laminate Precision."
+          }
+        ]
+      },
+      {
+        "id": "photo-gallery",
+        "title": "Photo gallery",
+        "fields": [
+          {
+            "key": "image",
+            "label": "Photo 1",
+            "value": "/assets/Assets/ExhibitionPhotos/ExhibitionPhotos1.jpg"
+          },
+          {
+            "key": "image",
+            "label": "Photo 2",
+            "value": "/assets/Assets/ExhibitionPhotos/ExhibitionPhotos2.jpg"
+          },
+          {
+            "key": "image",
+            "label": "Photo 3",
+            "value": "/assets/Assets/ExhibitionPhotos/ExhibitionPhotos3.jpg"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "pageId": "privacy-disclaimer",
+    "path": "/privacy-disclaimer",
+    "name": "Privacy Policy & Disclaimer",
+    "seo": {
+      "title": "Privacy Policy & Disclaimer",
+      "description": "Read our privacy policy and disclaimer for Foto Laminate Precision.",
+      "keywords": [
+        "privacy policy",
+        "disclaimer",
+        "legal",
+        "terms"
+      ]
+    },
+    "sections": [
+      {
+        "id": "hero",
+        "title": "Legal information",
+        "type": "standard",
+        "fields": [
+          {
+            "key": "h1",
+            "label": "Page heading",
+            "value": "Privacy Policy & Disclaimer"
+          },
+          {
+            "key": "p",
+            "label": "Hero summary",
+            "value": "Understand how we handle personal data, website usage, and legal responsibilities at Foto Laminate Precision."
+          }
+        ]
+      },
+      {
+        "id": "privacy",
+        "title": "Privacy policy",
+        "type": "standard",
+        "fields": [
+          {
+            "key": "h2",
+            "label": "Section heading",
+            "value": "Privacy Policy"
+          },
+          {
+            "key": "p",
+            "label": "Body copy",
+            "value": "We collect contact details and enquiry information only to respond to requests. Data is retained securely for order and service fulfillment."
+          }
+        ]
+      },
+      {
+        "id": "disclaimer",
+        "title": "Disclaimer",
+        "type": "standard",
+        "fields": [
+          {
+            "key": "h2",
+            "label": "Section heading",
+            "value": "Disclaimer"
+          },
+          {
+            "key": "p",
+            "label": "Body copy",
+            "value": "Photo lamination machine specifications may vary. Always confirm technical details with our sales team before ordering."
+          }
+        ]
+      }
+    ],
+    "schemas": [],
+    "faqs": []
+  },
+  {
+    "pageId": "videos",
+    "path": "/videos",
+    "name": "Videos",
+    "seo": {
+      "title": "Videos",
+      "description": "Watch product demos, manufacturing highlights, and customer applications.",
+      "keywords": [
+        "videos",
+        "demos",
+        "manufacturing"
+      ]
+    },
+    "sections": [
+      {
+        "id": "hero",
+        "title": "Video content",
+        "fields": [
+          {
+            "key": "h1",
+            "label": "Page heading",
+            "value": "Latest videos"
+          },
+          {
+            "key": "p",
+            "label": "Hero summary",
+            "value": "Watch product demos, manufacturing highlights, and customer applications."
+          }
+        ]
+      }
+    ]
+  }
+]
