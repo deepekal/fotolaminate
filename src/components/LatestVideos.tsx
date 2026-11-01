@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { CalendarDays } from "lucide-react";
-import { toast } from "sonner";
 import Link from "next/link";
 
 type LatestVideo = {
@@ -81,7 +80,8 @@ const LatestVideos = ({ limit = 3, viewAllHref, viewAllLabel = "View all videos"
         setVideos(data.items);
         setChannelUrl((prev) => data.channelUrl || prev);
       } catch (e) {
-        toast.error(e instanceof Error ? e.message : "Failed to load YouTube videos");
+        // Not shown to visitors: the empty state below links to the channel instead.
+        console.warn("Latest videos unavailable:", e instanceof Error ? e.message : e);
         if (active) setVideos([]);
       } finally {
         if (active) setLoading(false);
@@ -118,8 +118,12 @@ const LatestVideos = ({ limit = 3, viewAllHref, viewAllLabel = "View all videos"
             ))}
           </div>
         ) : videos.length === 0 ? (
-          <div className="rounded-lg border border-border bg-muted p-6 text-sm text-muted-foreground shadow-industrial">
-            No videos found.
+          <div className="rounded-lg border border-border bg-muted p-6 text-center text-sm text-muted-foreground shadow-industrial">
+            Watch our latest machine demos on{" "}
+            <a href={channelUrl} target="_blank" rel="noreferrer" className="font-semibold text-accent hover:underline">
+              our YouTube channel
+            </a>
+            .
           </div>
         ) : (
           <>

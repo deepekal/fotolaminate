@@ -120,49 +120,85 @@ function parseLatestVideosFromFeed(xml: string, limit: number): LatestVideo[] {
     .filter((v) => v.id && v.title && v.url);
 }
 
+type LockupNode = {
+  contentId?: string;
+  contentType?: string;
+  metadata?: { lockupMetadataViewModel?: { title?: { content?: string } } };
+};
+
+// Fallback when the RSS feed is down: read the channel's public "Videos" tab,
+// which embeds the latest uploads in its ytInitialData JSON.
+async function fetchLatestVideosFromChannelPage(channelId: string, limit: number): Promise<LatestVideo[]> {
+  const res = await fetch(`https://www.youtube.com/channel/${encodeURIComponent(channelId)}/videos`, {
+    headers: {
+      "User-Agent": "Mozilla/5.0",
+      "Accept-Language": "en-US,en;q=0.9",
+    },
+    next: { revalidate: 300 },
+  });
+  if (!res.ok) throw new Error(`YouTube channel page returned ${res.status}`);
+
+  const html = await res.text();
+  const match = html.match(/var ytInitialData = (\{.*?\});<\/script>/s);
+  if (!match) throw new Error("ytInitialData not found on YouTube channel page");
+
+  const lockups: LockupNode[] = [];
+  const walk = (node: unknown) => {
+    if (Array.isArray(node)) {
+      node.forEach(walk);
+    } else if (node && typeof node === "object") {
+      const obj = node as Record<string, unknown>;
+      if (obj.lockupViewModel) lockups.push(obj.lockupViewModel as LockupNode);
+      Object.values(obj).forEach(walk);
+    }
+  };
+  walk(JSON.parse(match[1]));
+
+  const seen = new Set<string>();
+  return lockups
+    .filter((l) => l.contentType === "LOCKUP_CONTENT_TYPE_VIDEO" && l.contentId)
+    .map((l) => {
+      const id = String(l.contentId);
+      return {
+        id,
+        title: l.metadata?.lockupMetadataViewModel?.title?.content?.trim() ?? "",
+        url: `https://www.youtube.com/watch?v=${id}`,
+        publishedAt: "", // the channel page only exposes relative dates ("1mo ago")
+        thumbnailUrl: `https://i.ytimg.com/vi/${id}/hqdefault.jpg`,
+      };
+    })
+    .filter((v) => v.title && !seen.has(v.id) && seen.add(v.id))
+    .slice(0, limit);
+}
+
+async function fetchLatestVideosFromFeed(channelId: string, limit: number): Promise<LatestVideo[]> {
+  const feedUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${encodeURIComponent(channelId)}`;
+  const res = await fetch(feedUrl, {
+    headers: {
+      "User-Agent": "Mozilla/5.0",
+      Accept: "application/atom+xml,application/xml,text/xml;q=0.9,*/*;q=0.8",
+    },
+    next: { revalidate: 300 },
+  });
+
+  if (!res.ok) {
+    const bodyPreview = await safeReadText(res, 120);
+    throw new Error(`YouTube feed returned ${res.status}: ${bodyPreview}`);
+  }
+
+  return parseLatestVideosFromFeed(await res.text(), limit);
+}
+
+// Last successful result per limit, served if YouTube is temporarily unreachable.
+const lastGood = new Map<number, { channelId: string; items: LatestVideo[] }>();
+
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const limit = clampInt(searchParams.get("limit"), 3, 1, 12);
+  const channelUrl = (process.env.YOUTUBE_LINK || "https://www.youtube.com/@fotolaminate5864").trim();
 
-  try {
-    const channelId = await resolveChannelId();
-    if (!channelId) {
-      return NextResponse.json(
-        {
-          ok: false,
-          error:
-            "Unable to resolve YouTube channel id. Set YOUTUBE_CHANNEL_ID or YOUTUBE_LINK in your environment.",
-        },
-        { status: 500 },
-      );
-    }
-
-    const feedUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${encodeURIComponent(channelId)}`;
-    const res = await fetch(feedUrl, {
-      headers: {
-        "User-Agent": "Mozilla/5.0",
-        Accept: "application/atom+xml,application/xml,text/xml;q=0.9,*/*;q=0.8",
-      },
-      next: { revalidate: 300 },
-    });
-
-    if (!res.ok) {
-      const bodyPreview = await safeReadText(res);
-      return NextResponse.json(
-        {
-          ok: false,
-          error: `Failed to fetch YouTube feed (${res.status}). ${bodyPreview ? `Response: ${bodyPreview}` : ""}`.trim(),
-        },
-        { status: 502 },
-      );
-    }
-
-    const xml = await res.text();
-    const items = parseLatestVideosFromFeed(xml, limit);
-
-    const channelUrl = (process.env.YOUTUBE_LINK || "https://www.youtube.com/@fotolaminate5864").trim();
-
-    return NextResponse.json(
+  const ok = (channelId: string, items: LatestVideo[]) =>
+    NextResponse.json(
       { ok: true, channelId, channelUrl, items },
       {
         headers: {
@@ -170,13 +206,30 @@ export async function GET(req: Request) {
         },
       },
     );
+
+  try {
+    const channelId = await resolveChannelId();
+    if (!channelId) {
+      throw new Error("Unable to resolve YouTube channel id. Set YOUTUBE_CHANNEL_ID or YOUTUBE_LINK in your environment.");
+    }
+
+    let items: LatestVideo[] = [];
+    try {
+      items = await fetchLatestVideosFromFeed(channelId, limit);
+    } catch (feedErr) {
+      console.warn("[youtube] RSS feed failed, using channel page fallback:", feedErr instanceof Error ? feedErr.message : feedErr);
+    }
+    if (items.length === 0) items = await fetchLatestVideosFromChannelPage(channelId, limit);
+
+    if (items.length > 0) lastGood.set(limit, { channelId, items });
+    return ok(channelId, items);
   } catch (e) {
-    return NextResponse.json(
-      {
-        ok: false,
-        error: e instanceof Error ? e.message : "Failed to load YouTube videos",
-      },
-      { status: 500 },
-    );
+    console.error("[youtube] failed to load latest videos:", e instanceof Error ? e.message : e);
+
+    const cached = lastGood.get(limit);
+    if (cached) return ok(cached.channelId, cached.items);
+
+    // Details stay in the server log; visitors get a short, generic message.
+    return NextResponse.json({ ok: false, error: "Latest videos are temporarily unavailable." }, { status: 502 });
   }
 }
