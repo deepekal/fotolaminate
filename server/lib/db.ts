@@ -1,5 +1,5 @@
 import pg, { type QueryResult, type QueryResultRow } from "pg";
-import { env } from "./env";
+import { env, pgSslOption } from "./env";
 
 const { Pool } = pg;
 
@@ -15,16 +15,16 @@ function getPool(): pg.Pool {
 
   const newPool = new Pool({
     connectionString,
-    ssl: { rejectUnauthorized: false },
+    ssl: pgSslOption(connectionString),
     max: 10,
   });
 
   // Increase max listeners to prevent EventEmitter warnings
   newPool.setMaxListeners(20);
 
-  if (process.env.NODE_ENV !== "production") {
-    globalForPg.pgPool = newPool;
-  }
+  // Cache in every environment: without this, production created a new pool
+  // per query and leaked connections until Postgres refused new clients.
+  globalForPg.pgPool = newPool;
 
   return newPool;
 }

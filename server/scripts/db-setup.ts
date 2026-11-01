@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import pg from "pg";
-import { env, requireEnv } from "../lib/env";
+import { env, pgSslOption, requireEnv } from "../lib/env";
 
 function readSql(filePath: string) {
   return fs.readFileSync(filePath, "utf8");
@@ -23,7 +23,7 @@ async function main() {
 
   const client = new pg.Client({
     connectionString,
-    ssl: { rejectUnauthorized: false },
+    ssl: pgSslOption(connectionString),
   });
 
   await client.connect();

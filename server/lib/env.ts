@@ -12,6 +12,12 @@ export const env = {
   maxUploadBytes: Number(process.env.MAX_UPLOAD_BYTES ?? 5 * 1024 * 1024),
 };
 
+// Supabase requires SSL; a local/self-hosted Postgres usually doesn't have it.
+// Add `?sslmode=disable` to the connection string to connect without SSL.
+export function pgSslOption(connectionString: string) {
+  return /[?&]sslmode=disable\b/.test(connectionString) ? false : { rejectUnauthorized: false };
+}
+
 export function requireEnv(value: string, name: string) {
   if (!value) {
     throw new Error(`Missing required env var: ${name}`);
