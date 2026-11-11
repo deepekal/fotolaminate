@@ -6,12 +6,16 @@ import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+// Menu order: these links, then the Gallery dropdown, then linksAfterGallery (Contact Us always last).
 const navLinks = [
   { label: "Home", to: "/" },
   { label: "About Us", to: "/about" },
   { label: "Products", to: "/products" },
   { label: "Catalogue", to: "/catalogue" },
   { label: "Videos", to: "/videos" },
+];
+
+const linksAfterGallery = [
   { label: "Blog", to: "/blogs" },
   { label: "Contact Us", to: "/contact" },
 ];
@@ -112,6 +116,15 @@ const Navbar = () => {
               </div>
             </div>
           </div>
+          {linksAfterGallery.map((link) => {
+            const active = isActive(pathname, link.to);
+            return (
+              <Link key={link.to} href={link.to} aria-current={active ? "page" : undefined} className={desktopLinkClass(active)}>
+                {link.label}
+                <ActiveBar show={active} />
+              </Link>
+            );
+          })}
         </div>
 
         <div className="flex items-center gap-2">
@@ -148,7 +161,7 @@ const Navbar = () => {
             className="overflow-hidden border-t border-primary-foreground/10 bg-primary lg:hidden"
           >
             <div className="container-max flex flex-col gap-1 py-4">
-              {[...navLinks, ...galleryLinks].map((link) => {
+              {[...navLinks, ...galleryLinks, ...linksAfterGallery].map((link) => {
                 const active = isActive(pathname, link.to);
                 return (
                   <Link
