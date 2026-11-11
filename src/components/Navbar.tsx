@@ -40,26 +40,14 @@ const Navbar = () => {
         <div className="container-max flex items-center justify-between">
           <div>
             GST No: 07ACJPV6163A1ZJ &nbsp;|&nbsp;
-            <a href="tel:+919873684816" className="hover:text-accent">+91 9873684816</a> /
-            <a href="tel:+919873184816" className="hover:text-accent"> +91 9873184816</a> &nbsp;|&nbsp;
             <a href="mailto:codalam@yahoo.co.in" className="hover:text-accent">codalam@yahoo.co.in</a>
           </div>
-          <div className="flex items-center gap-4">
-            <a href="https://www.facebook.com/fotolaminate/" target="_blank" rel="noreferrer" className="transition-colors hover:text-accent">
-              <Facebook size={14} />
-            </a>
-            <a href="https://www.youtube.com/@fotolaminate5864" target="_blank" rel="noreferrer" className="transition-colors hover:text-accent">
-              <Youtube size={14} />
-            </a>
-            <a href="https://www.instagram.com/fotolaminate" target="_blank" rel="noreferrer" className="transition-colors hover:text-accent">
-              <Instagram size={14} />
-            </a>
-            <a href="https://www.linkedin.com/company/fotolaminate/" target="_blank" rel="noreferrer" className="transition-colors hover:text-accent">
-              <Linkedin size={14} />
-            </a>
-            <a href="https://x.com/fotolaminate" target="_blank" rel="noreferrer" className="transition-colors hover:text-accent">
-              <Twitter size={14} />
-            </a>
+          {/* -my-0.5 keeps the pill from making the top bar taller (sticky offsets depend on header height). */}
+          <div className="-my-0.5 flex items-center gap-2 rounded-full gradient-accent px-3 py-0.5 font-semibold text-accent-foreground">
+            <Phone size={12} aria-hidden="true" />
+            <a href="tel:+919873684816" className="hover:underline">+91 98736 84816</a>
+            <span aria-hidden="true">/</span>
+            <a href="tel:+919873184816" className="hover:underline">+91 98731 84816</a>
           </div>
         </div>
       </div>
