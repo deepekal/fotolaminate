@@ -35,7 +35,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     const title = post.meta_title?.trim() || post.title;
     const description =
       (post.meta_description?.trim() || `Read ${post.title} from Foto Laminate Precision.`).slice(0, 160);
-    const image = post.og_image_url || post.cover_image_url || "/favicon.svg";
+    const image = post.og_image_url || post.cover_image_url || "/logo.png";
 
     return {
       title,

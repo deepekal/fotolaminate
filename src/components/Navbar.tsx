@@ -63,9 +63,17 @@ const Navbar = () => {
           </div>
         </div>
       </div>
-      <div className="container-max flex items-center justify-between px-4 py-3 md:px-8">
-        <Link href="/" className="font-display text-xl sm:text-2xl font-bold tracking-tight text-primary-foreground truncate max-w-[70%]">
-          FOTO <span className="text-accent">LAMINATE</span>
+      <div className="container-max flex items-center justify-between px-4 py-2 md:px-8">
+        {/* Logo artwork has navy elements and a white ground, so it sits on a white badge over the dark header. */}
+        <Link href="/" aria-label="Foto Laminate — home" className="shrink-0 rounded-md bg-white px-2 py-1 shadow-sm">
+          <img
+            src="/logo-320.webp"
+            srcSet="/logo-320.webp 1x, /logo-640.webp 2x"
+            alt="Foto Laminate"
+            width={105}
+            height={40}
+            className="h-9 w-auto sm:h-10"
+          />
         </Link>
 
         <div className="hidden items-center gap-6 lg:flex">

@@ -46,24 +46,28 @@ export const metadata: Metadata = {
       "Industrial photo lamination machines and finishing solutions by Foto Laminate Precision.",
     images: [
       {
-        url: "/favicon.svg",
-        width: 64,
-        height: 64,
-        alt: "Foto Laminate Precision",
+        url: "/logo.png",
+        width: 1200,
+        height: 456,
+        alt: "Foto Laminate",
       },
     ],
   },
   twitter: {
-    card: "summary",
+    card: "summary_large_image",
     title: "Foto Laminate Precision",
     description:
       "Industrial photo lamination machines and finishing solutions by Foto Laminate Precision.",
-    images: ["/favicon.svg"],
+    images: ["/logo.png"],
   },
   icons: {
-    icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
-    shortcut: ["/favicon.svg"],
-    apple: ["/favicon.svg"],
+    icon: [
+      { url: "/favicon-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/favicon-16.png", sizes: "16x16", type: "image/png" },
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+    ],
+    shortcut: ["/favicon-32.png"],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }],
   },
   manifest: "/manifest.webmanifest",
 };

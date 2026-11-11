@@ -8,9 +8,17 @@ const Footer = () => (
     <div className="container-max">
       <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
         <div>
-          <div className="mb-4 font-display text-2xl font-bold text-primary-foreground">
-            FOTO <span className="text-accent">LAMINATE</span>
-          </div>
+          <Link href="/" aria-label="Foto Laminate — home" className="mb-4 inline-block rounded-lg bg-white px-3 py-2">
+            <img
+              src="/logo-320.webp"
+              srcSet="/logo-320.webp 1x, /logo-640.webp 2x"
+              alt="Foto Laminate"
+              width={168}
+              height={64}
+              className="h-16 w-auto"
+              loading="lazy"
+            />
+          </Link>
           <p className="text-sm text-primary-foreground/60">
             Leading manufacturer of photo lamination machines at an affordable price in Delhi, India.
           </p>
