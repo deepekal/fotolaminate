@@ -78,6 +78,18 @@
     max-width: 84rem;
     padding-inline: clamp(1rem, 4vw, 2.5rem);
   }
+  /* Engineering-drawing grid behind machine photos (blog). Photos use mix-blend-multiply so their
+     white studio background disappears into the grid. */
+  .blueprint {
+    background-color: hsl(213 45% 96%);
+    background-image:
+      linear-gradient(hsl(var(--primary) / 0.10) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--primary) / 0.10) 1px, transparent 1px),
+      linear-gradient(hsl(var(--primary) / 0.05) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--primary) / 0.05) 1px, transparent 1px);
+    background-size: 80px 80px, 80px 80px, 16px 16px, 16px 16px;
+    background-position: -1px -1px;
+  }
   /* Reusable sections (e.g. FAQ) placed inside a page column must not add a second gutter. */
   .container-max .container-max {
     padding-inline: 0;
