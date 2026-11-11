@@ -117,7 +117,7 @@ const Footer = () => (
               <MapPin size={16} className="mt-0.5 shrink-0 text-accent" aria-hidden="true" />
               <span>
                 <span className="block font-semibold text-primary-foreground">Factory</span>
-                G.FLOOR, HO.IN.KH.NO.-87/570/II-4, Maidan Garhi, New Delhi, Delhi - 110030
+                Ground Floor, House No. 87/570/II4, Maidan Garhi, New Delhi - 110030
               </span>
             </li>
             <li className="flex gap-3">

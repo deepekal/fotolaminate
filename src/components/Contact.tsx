@@ -160,7 +160,7 @@ const Contact = ({
               <div>
                 <p className="mb-1 text-xs font-bold uppercase tracking-wider text-accent">Factory Address</p>
                 <p className="text-sm font-medium text-foreground">
-                  G.FLOOR, HO.IN.KH.NO.-87/570/II-4, MAIDAN GARHI, New Delhi,<br /> Delhi - 110030.
+                  Ground Floor, House No. 87/570/II4, Maidan Garhi, New Delhi - 110030
                 </p>
               </div>
             </div>
