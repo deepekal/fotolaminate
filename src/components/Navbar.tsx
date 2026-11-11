@@ -68,12 +68,12 @@ const Navbar = () => {
     >
       {/* Single row. Fixed min-height keeps header height (and the Products sticky-filter offsets) stable. */}
       <div className="container-max flex min-h-16 items-center justify-between gap-4 lg:min-h-[76px] xl:gap-6">
-        <Link href="/" aria-label="Photo Laminate — home" className="shrink-0">
+        <Link href="/" aria-label="Foto Laminate — home" className="shrink-0">
           <img
             src="/logo-360.webp"
             srcSet="/logo-360.webp 1x, /logo-720.webp 2x"
-            alt="Photo Laminate"
-            width={236}
+            alt="Foto Laminate"
+            width={204}
             height={36}
             className="h-8 w-auto sm:h-9 lg:h-7 xl:h-10"
           />

@@ -55,9 +55,9 @@ const Footer = () => (
             <img
               src="/logo-360.webp"
               srcSet="/logo-360.webp 1x, /logo-720.webp 2x"
-              alt="Photo Laminate"
+              alt="Foto Laminate"
               width={260}
-              height={40}
+              height={46}
               className="h-auto w-full max-w-[260px]"
               loading="lazy"
             />

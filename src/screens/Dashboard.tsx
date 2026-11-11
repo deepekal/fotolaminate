@@ -33,7 +33,7 @@ function parseRoute(): Route {
 }
 
 const Logo = ({ className = "" }: { className?: string }) => (
-  <img src="/logo-360.webp" srcSet="/logo-360.webp 1x, /logo-720.webp 2x" alt="Photo Laminate" width={236} height={36} className={className} />
+  <img src="/logo-360.webp" srcSet="/logo-360.webp 1x, /logo-720.webp 2x" alt="Foto Laminate" width={204} height={36} className={className} />
 );
 
 const DashboardPage = () => {
