@@ -48,7 +48,7 @@ export const metadata: Metadata = {
       {
         url: "/logo.png",
         width: 1200,
-        height: 489,
+        height: 630,
         alt: "Foto Laminate",
       },
     ],

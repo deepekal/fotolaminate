@@ -51,19 +51,20 @@ const Navbar = () => {
           </div>
         </div>
       </div>
-      <div className="container-max flex items-center justify-between py-2">
+      {/* Fixed minimum height so the header (and the Products sticky filter offsets) stay stable whatever the logo size. */}
+      <div className="container-max flex min-h-[60px] items-center justify-between py-2 sm:min-h-[64px]">
         <Link href="/" aria-label="Foto Laminate — home" className="shrink-0">
           <img
             src="/logo-360.webp"
             srcSet="/logo-360.webp 1x, /logo-720.webp 2x"
-            alt="Foto Laminate"
-            width={143}
-            height={48}
-            className="h-11 w-auto drop-shadow-[0_0_1px_rgba(255,255,255,0.95)] sm:h-12"
+            alt="Photo Laminate"
+            width={236}
+            height={36}
+            className="h-8 w-auto sm:h-9 lg:h-7 xl:h-10"
           />
         </Link>
 
-        <div className="hidden items-center gap-6 lg:flex">
+        <div className="hidden items-center gap-5 lg:flex xl:gap-6">
           {navLinks.map((link) => (
             <Link
               key={link.to}
