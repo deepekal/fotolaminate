@@ -7,6 +7,7 @@ import { CalendarDays, Clock } from "lucide-react";
 import { useEffect, useState } from "react";
 import { api, BlogPostRecord } from "@/lib/api";
 import { blogPosts } from "@/content/blogs";
+import { fixMojibake } from "@/lib/rich-text";
 
 function staticToRecord(p: (typeof blogPosts)[0]): BlogPostRecord {
   return {
@@ -32,7 +33,7 @@ const ENTITIES: Record<string, string> = { amp: "&", quot: '"', apos: "'", lt: "
 
 /** Plain text from stored HTML/markdown-ish content. */
 function toPlainText(input: string): string {
-  return input
+  return fixMojibake(input)
     .replace(/<[^>]+>/g, " ")
     .replace(/&(#039|amp|quot|apos|lt|gt|nbsp);/g, (_, e: string) => ENTITIES[e] ?? " ")
     .replace(/\\(["'])/g, "$1")

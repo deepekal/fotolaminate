@@ -70,52 +70,43 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 import type { BlogPostRecord } from "@/lib/api";
 
+const iso = (v: unknown) => (v instanceof Date ? v.toISOString() : String(v ?? ""));
+
 export default async function Page({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   let initialPost: BlogPostRecord | null = null;
-  
+  let related: BlogPostRecord[] = [];
+
   try {
-    const r = await query<BlogPostRecord>(
-      "select * from public.blog_posts where published = true and slug = $1 limit 1",
-      [slug]
+    const r = await query<BlogPostRecord>("select * from public.blog_posts where published = true and slug = $1 limit 1", [slug]);
+    if (r.rows[0]) initialPost = { ...r.rows[0], created_at: iso(r.rows[0].created_at), updated_at: iso(r.rows[0].updated_at) };
+
+    // Other guides for the "More machine guides" strip (newest first, skip empty posts).
+    const rel = await query<BlogPostRecord>(
+      `select id, title, slug, cover_image_url, meta_description, created_at, updated_at, left(content, 600) as content
+       from public.blog_posts
+       where published = true and slug <> $1 and length(content) > 0
+       order by created_at desc limit 3`,
+      [slug],
     );
-    if (r.rows[0]) {
-      initialPost = r.rows[0];
-    }
-  } catch (e) {
-    // Ignore error
+    related = rel.rows.map((p) => ({ ...p, created_at: iso(p.created_at), updated_at: iso(p.updated_at) }));
+  } catch {
+    // The client component falls back to the API / static content.
   }
 
-  const schemas = Array.isArray(initialPost?.schemas) ? [...initialPost.schemas] : [];
-
-  if (initialPost?.faqs && Array.isArray(initialPost.faqs) && initialPost.faqs.length > 0) {
-    schemas.push({
-      "@context": "https://schema.org",
-      "@type": "FAQPage",
-      "mainEntity": initialPost.faqs.map((faq: { q: string; a: string }) => ({
-        "@type": "Question",
-        "name": faq.q,
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": faq.a
-        }
-      }))
-    });
-  }
+  // FAQPage structured data is added by <FAQSection>; only custom schemas are rendered here.
+  const schemas = Array.isArray(initialPost?.schemas) ? initialPost.schemas : [];
 
   return (
     <>
-      {schemas.map((schema, index) => {
-        const schemaString = typeof schema === "string" ? schema : JSON.stringify(schema);
-        return (
-          <script
-            key={index}
-            type="application/ld+json"
-            dangerouslySetInnerHTML={{ __html: schemaString }}
-          />
-        );
-      })}
-      <BlogPostPage initialPost={initialPost} />
+      {schemas.map((schema, index) => (
+        <script
+          key={index}
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: typeof schema === "string" ? schema : JSON.stringify(schema) }}
+        />
+      ))}
+      <BlogPostPage initialPost={initialPost} related={related} />
     </>
   );
 }
