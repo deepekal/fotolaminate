@@ -4,6 +4,28 @@ import { useEffect, useMemo, useState } from "react";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 import type { PageContent, PageField, PageFAQ, PageSection, PageFieldKey } from "@/lib/page-types";
+import {
+  Card,
+  EditorBody,
+  EditorHeader,
+  EmptyEditor,
+  FaqField,
+  Field,
+  ImageField,
+  JsonListEditor,
+  ListPane,
+  ListRow,
+  ManagerLayout,
+  SeoPreview,
+  btnGhost,
+  btnSecondary,
+  confirmDiscard,
+  inputCls,
+  textareaCls,
+  useSaveShortcut,
+  useUnloadWarning,
+} from "@/components/dashboard/admin-ui";
+import { Plus, RefreshCw, X } from "lucide-react";
 
 type DraftSection = Omit<PageSection, 'faqs'> & {
   faqs?: string[];
@@ -58,6 +80,27 @@ const PageManager = () => {
     [pages, selectedId],
   );
 
+  const baseline = useMemo(() => (selectedPage ? toDraft(selectedPage) : null), [selectedPage]);
+  const dirty = Boolean(draft && baseline && JSON.stringify(draft) !== JSON.stringify(baseline));
+  useUnloadWarning(dirty);
+
+  const filtered = useMemo(() => {
+    const q = search.toLowerCase();
+    return pages.filter((page) => page.name.toLowerCase().includes(q) || page.pageId.toLowerCase().includes(q) || page.path.toLowerCase().includes(q));
+  }, [pages, search]);
+
+  function openPage(id: string) {
+    if (id === selectedId) return;
+    if (!confirmDiscard(dirty)) return;
+    setSelectedId(id);
+  }
+
+  function backToList() {
+    if (!confirmDiscard(dirty)) return;
+    setSelectedId(null);
+    setDraft(null);
+  }
+
   useEffect(() => {
     void refresh();
   }, []);
@@ -96,42 +139,8 @@ const PageManager = () => {
     });
   }
 
-  function updateSectionFAQ(sectionId: string, faqIndex: number, value: string) {
-    updateDraft((current) => {
-      const sections = current.sections.map((section) => {
-        if (section.id !== sectionId) return section;
-        if (!section.faqs) return section;
-        const nextFaqs = section.faqs.map((faq, index) =>
-          index === faqIndex ? value : faq,
-        );
-        return { ...section, faqs: nextFaqs };
-      });
-      return { ...current, sections };
-    });
-  }
 
-  function addSectionFAQ(sectionId: string) {
-    updateDraft((current) => {
-      const sections = current.sections.map((section) => {
-        if (section.id !== sectionId) return section;
-        const nextFaqs = [...(section.faqs ?? []), JSON.stringify({ q: "", a: "" }, null, 2)];
-        return { ...section, faqs: nextFaqs };
-      });
-      return { ...current, sections };
-    });
-  }
 
-  function removeSectionFAQ(sectionId: string, faqIndex: number) {
-    updateDraft((current) => {
-      const sections = current.sections.map((section) => {
-        if (section.id !== sectionId) return section;
-        if (!section.faqs) return section;
-        const nextFaqs = section.faqs.filter((_, idx) => idx !== faqIndex);
-        return { ...section, faqs: nextFaqs };
-      });
-      return { ...current, sections };
-    });
-  }
 
 
   async function uploadImage(sectionId: string, fieldIndex: number, file: File) {
@@ -249,6 +258,8 @@ const PageManager = () => {
     }
   }
 
+  useSaveShortcut(() => void save(), Boolean(draft));
+
   function addSectionField(sectionId: string, key: PageFieldKey) {
     updateDraft((current) => {
       const sections = current.sections.map((section) => {
@@ -273,462 +284,150 @@ const PageManager = () => {
     });
   }
 
-  function parseFaqJson(faqString: string): PageFAQ {
-    try {
-      return JSON.parse(faqString);
-    } catch {
-      return { q: "", a: "" };
-    }
-  }
 
-  function faqToJson(faq: PageFAQ): string {
-    return JSON.stringify(faq, null, 2);
-  }
 
-  function updateSectionFAQQuestion(sectionId: string, faqIndex: number, question: string) {
-    updateDraft((current) => {
-      const sections = current.sections.map((section) => {
-        if (section.id !== sectionId) return section;
-        if (!section.faqs) return section;
-        const nextFaqs = section.faqs.map((faq, index) => {
-          if (index !== faqIndex) return faq;
-          const parsed = parseFaqJson(faq);
-          return faqToJson({ ...parsed, q: question });
-        });
-        return { ...section, faqs: nextFaqs };
-      });
-      return { ...current, sections };
-    });
-  }
 
-  function updateSectionFAQAnswer(sectionId: string, faqIndex: number, answer: string) {
-    updateDraft((current) => {
-      const sections = current.sections.map((section) => {
-        if (section.id !== sectionId) return section;
-        if (!section.faqs) return section;
-        const nextFaqs = section.faqs.map((faq, index) => {
-          if (index !== faqIndex) return faq;
-          const parsed = parseFaqJson(faq);
-          return faqToJson({ ...parsed, a: answer });
-        });
-        return { ...section, faqs: nextFaqs };
-      });
-      return { ...current, sections };
-    });
-  }
 
-  function updateGlobalFAQQuestion(faqIndex: number, question: string) {
-    updateDraft((current) => {
-      const nextFaqs = current.faqs.map((faq, index) => {
-        if (index !== faqIndex) return faq;
-        const parsed = parseFaqJson(faq);
-        return faqToJson({ ...parsed, q: question });
-      });
-      return { ...current, faqs: nextFaqs };
-    });
-  }
 
-  function updateGlobalFAQAnswer(faqIndex: number, answer: string) {
-    updateDraft((current) => {
-      const nextFaqs = current.faqs.map((faq, index) => {
-        if (index !== faqIndex) return faq;
-        const parsed = parseFaqJson(faq);
-        return faqToJson({ ...parsed, a: answer });
-      });
-      return { ...current, faqs: nextFaqs };
-    });
+
+  function fieldLabel(field: PageField) {
+    const kinds: Record<string, string> = { h1: "Main heading", h2: "Heading", h3: "Subheading", p: "Paragraph", image: "Image", link: "Link" };
+    return field.label || kinds[field.key] || field.key;
   }
 
   function renderFieldInput(sectionId: string, field: PageField, index: number) {
     const value = field.value ?? "";
-    const label = `${field.label} (${field.key})`;
-    const inputClass =
-      "w-full rounded-md border border-border bg-card px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-accent focus:outline-none";
+    const removeBtn = (
+      <button type="button" onClick={() => removeSectionField(sectionId, index)} className={`${btnGhost} h-7 px-2 text-xs`} aria-label={`Remove ${fieldLabel(field)}`}>
+        <X size={14} aria-hidden="true" />
+      </button>
+    );
 
     if (field.key === "image") {
       return (
-        <div className="grid gap-2">
-          <div className="flex items-center justify-between">
-            <label className="text-sm font-semibold text-foreground">{label}</label>
-            <button type="button" onClick={() => removeSectionField(sectionId, index)} className="text-xs font-semibold text-destructive hover:underline">Remove</button>
-          </div>
-          <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
-            <input
-              type="text"
-              value={value}
-              onChange={(e) => updateSectionField(sectionId, index, e.target.value)}
-              className={inputClass}
-              placeholder="Image URL"
-            />
-            <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-border bg-muted px-3 py-2 text-xs font-semibold text-foreground transition-colors hover:border-accent">
-              Upload
-              <input
-                type="file"
-                accept="image/*"
-                className="sr-only"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) void uploadImage(sectionId, index, file);
-                }}
-              />
-            </label>
-          </div>
-          {value ? <img src={value} alt={field.label} className="h-28 w-full rounded-lg object-cover" /> : null}
+        <div className="relative">
+          <div className="absolute right-0 top-0">{removeBtn}</div>
+          <ImageField label={fieldLabel(field)} value={value} onChange={(v) => updateSectionField(sectionId, index, v)} onUpload={(f) => void uploadImage(sectionId, index, f)} />
         </div>
       );
     }
 
-    if (field.key === "p" || value.length > 120) {
-      return (
-        <div className="grid gap-2">
-          <div className="flex items-center justify-between">
-            <label className="text-sm font-semibold text-foreground">{label}</label>
-            <button type="button" onClick={() => removeSectionField(sectionId, index)} className="text-xs font-semibold text-destructive hover:underline">Remove</button>
-          </div>
-          <textarea
-            rows={4}
-            value={value}
-            onChange={(e) => updateSectionField(sectionId, index, e.target.value)}
-            className={inputClass}
-            placeholder="Enter paragraph text"
-          />
-        </div>
-      );
-    }
-
+    const long = field.key === "p" || value.length > 120;
     return (
-      <div className="grid gap-2">
-        <div className="flex items-center justify-between">
-          <label className="text-sm font-semibold text-foreground">{label}</label>
-          <button type="button" onClick={() => removeSectionField(sectionId, index)} className="text-xs font-semibold text-destructive hover:underline">Remove</button>
+      <div>
+        <div className="mb-1.5 flex items-center justify-between gap-2">
+          <span className="text-sm font-medium text-slate-700">
+            {fieldLabel(field)} <span className="ml-1 rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[10px] text-slate-500">{field.key}</span>
+          </span>
+          {removeBtn}
         </div>
-        <input
-          type="text"
-          value={value}
-          onChange={(e) => updateSectionField(sectionId, index, e.target.value)}
-          className={inputClass}
-          placeholder="Enter text"
-        />
+        {long ? (
+          <textarea rows={4} value={value} onChange={(e) => updateSectionField(sectionId, index, e.target.value)} className={textareaCls} placeholder="Enter text" aria-label={fieldLabel(field)} />
+        ) : (
+          <input type="text" value={value} onChange={(e) => updateSectionField(sectionId, index, e.target.value)} className={inputCls} placeholder="Enter text" aria-label={fieldLabel(field)} />
+        )}
       </div>
     );
   }
 
-  return (
-    <div className="grid gap-6 lg:grid-cols-12">
-      <div className="lg:col-span-4">
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="font-display text-lg font-bold text-foreground">Pages</h2>
-          <button
-            type="button"
-            onClick={refresh}
-            className="rounded-md border border-border bg-muted px-3 py-2 text-xs font-semibold text-foreground transition-colors hover:border-accent"
-          >
-            Refresh
-          </button>
-        </div>
+  const list = (
+    <ListPane
+      title="Pages"
+      count={filtered.length}
+      search={search}
+      onSearch={setSearch}
+      extraAction={
+        <button type="button" onClick={() => void refresh()} className={btnSecondary} aria-label="Reload pages">
+          <RefreshCw size={15} aria-hidden="true" />
+        </button>
+      }
+      loading={loading}
+      emptyText={pages.length === 0 ? "No pages configured." : "No pages match your search."}
+    >
+      {filtered.map((page) => (
+        <ListRow key={page.pageId} active={page.pageId === selectedId} onClick={() => openPage(page.pageId)} title={page.name} meta={page.path} />
+      ))}
+    </ListPane>
+  );
 
-        <input
-          type="search"
-          placeholder="Search pages…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="mb-3 w-full rounded-md border border-border bg-muted px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-accent focus:outline-none"
-        />
-
-        <div className="space-y-3">
-          {loading ? (
-            <div className="rounded-lg border border-border bg-muted p-4 text-sm text-muted-foreground">Loading…</div>
-          ) : pages.length === 0 ? (
-            <div className="rounded-lg border border-border bg-muted p-4 text-sm text-muted-foreground">No pages configured.</div>
-          ) : (
-            pages
-              .filter((page) =>
-                page.name.toLowerCase().includes(search.toLowerCase()) ||
-                page.pageId.toLowerCase().includes(search.toLowerCase()) ||
-                page.path.toLowerCase().includes(search.toLowerCase()),
-              )
-              .map((page) => (
-                <button
-                  key={page.pageId}
-                  type="button"
-                  onClick={() => setSelectedId(page.pageId)}
-                  className={`w-full rounded-lg border p-4 text-left shadow-industrial transition-colors ${
-                    page.pageId === selectedId ? "border-accent bg-card" : "border-border bg-muted hover:border-accent/50"
-                  }`}
-                >
-                  <div className="mb-1 font-display text-base font-bold text-foreground">{page.name}</div>
-                  <div className="text-xs text-muted-foreground">{page.path}</div>
+  const editor = !draft ? (
+    <EmptyEditor title="Select a page" text="Choose a page from the list to edit its text, images, SEO and FAQs." />
+  ) : (
+    <div>
+      <EditorHeader
+        kicker={`Edit page · ${draft.path}`}
+        title={draft.name}
+        dirty={dirty}
+        viewHref={draft.path}
+        onSave={() => void save()}
+        saving={saving}
+        saveLabel="Save page"
+        onBack={backToList}
+      />
+      <EditorBody>
+        {draft.sections.map((section) => (
+          <Card
+            key={section.id}
+            title={section.title}
+            description={section.type === "faq" ? "Questions and answers" : undefined}
+            actions={
+              section.type === "faq" ? undefined : (
+                <button type="button" onClick={() => addSectionField(section.id, "image")} className={btnSecondary}>
+                  <Plus size={15} aria-hidden="true" /> Add image
                 </button>
-              ))
-          )}
-        </div>
-      </div>
+              )
+            }
+          >
+            {section.type === "faq" ? (
+              <FaqField
+                faqs={section.faqs ?? []}
+                onChange={(faqs) =>
+                  updateDraft((current) => ({
+                    ...current,
+                    sections: current.sections.map((sec) => (sec.id === section.id ? { ...sec, faqs } : sec)),
+                  }))
+                }
+                label="Questions"
+              />
+            ) : section.fields && section.fields.length > 0 ? (
+              section.fields.map((field, index) => <div key={`${section.id}-${index}`}>{renderFieldInput(section.id, field, index)}</div>)
+            ) : (
+              <p className="text-sm text-slate-500">This section has no editable fields.</p>
+            )}
+          </Card>
+        ))}
 
-      <div className="lg:col-span-8">
-        <div className="mb-4 rounded-lg border border-border bg-muted p-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <div className="font-display text-lg font-bold text-foreground">Page editor</div>
-              <div className="text-xs text-muted-foreground">Edit section text, page SEO, and section-level image fields.</div>
-            </div>
-            <button
-              type="button"
-              onClick={save}
-              disabled={!draft || saving}
-              className="rounded-md gradient-accent px-4 py-2 text-sm font-bold text-accent-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {saving ? "Saving…" : "Save page"}
-            </button>
-          </div>
-        </div>
+        <Card title="Search engine (SEO)" description="How this page appears in Google results.">
+          <SeoPreview title={draft.seo.title} description={draft.seo.description} path={draft.path} />
+          <Field label="SEO title" counter={{ value: draft.seo.title.trim().length, ideal: [50, 60] }}>
+            <input type="text" value={draft.seo.title} onChange={(e) => updateDraft((current) => ({ ...current, seo: { ...current.seo, title: e.target.value } }))} className={inputCls} />
+          </Field>
+          <Field label="SEO description" counter={{ value: draft.seo.description.trim().length, ideal: [140, 160] }}>
+            <textarea rows={3} value={draft.seo.description} onChange={(e) => updateDraft((current) => ({ ...current, seo: { ...current.seo, description: e.target.value } }))} className={textareaCls} />
+          </Field>
+          <Field label="Keywords" hint="Separate with commas.">
+            <input type="text" value={draft.keywordString} onChange={(e) => updateDraft((current) => ({ ...current, keywordString: e.target.value }))} className={inputCls} />
+          </Field>
+        </Card>
 
-        {!draft ? (
-          <div className="rounded-lg border border-border bg-muted p-6 text-sm text-muted-foreground">
-            Select a page from the list to edit its sections and SEO fields.
-          </div>
-        ) : (
-          <div className="space-y-5">
-            <div className="rounded-lg border border-border bg-card p-4">
-              <div className="grid gap-4 md:grid-cols-2">
-                <div>
-                  <label className="mb-2 block text-sm font-semibold text-foreground">SEO title</label>
-                  <input
-                    type="text"
-                    value={draft.seo.title}
-                    onChange={(e) => updateDraft((current) => ({ ...current, seo: { ...current.seo, title: e.target.value } }))}
-                    className="w-full rounded-md border border-border bg-muted px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-accent focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="mb-2 block text-sm font-semibold text-foreground">SEO keywords</label>
-                  <input
-                    type="text"
-                    value={draft.keywordString}
-                    onChange={(e) => updateDraft((current) => ({ ...current, keywordString: e.target.value }))}
-                    className="w-full rounded-md border border-border bg-muted px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-accent focus:outline-none"
-                    placeholder="photo lamination, machines, industrial"
-                  />
-                </div>
-              </div>
+        <Card title="Page FAQs" description="Page-level questions and answers.">
+          <FaqField faqs={draft.faqs} onChange={(faqs) => updateDraft((c) => ({ ...c, faqs }))} label="Questions" />
+        </Card>
 
-              <div className="mt-4">
-                <label className="mb-2 block text-sm font-semibold text-foreground">SEO description</label>
-                <textarea
-                  rows={3}
-                  value={draft.seo.description}
-                  onChange={(e) => updateDraft((current) => ({ ...current, seo: { ...current.seo, description: e.target.value } }))}
-                  className="w-full rounded-md border border-border bg-muted px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-accent focus:outline-none"
-                />
-              </div>
-
-              <div className="mt-6">
-                <div className="mb-2 flex items-center justify-between">
-                  <label className="block text-sm font-semibold text-foreground">Structured Data Schemas (JSON-LD)</label>
-                  <button
-                    type="button"
-                    onClick={() => updateDraft((c) => ({ ...c, schemas: [...c.schemas, "{"] }))}
-                    className="rounded-md border border-border bg-muted px-3 py-2 text-xs font-semibold text-foreground transition-colors hover:border-accent"
-                  >
-                    + Add Schema
-                  </button>
-                </div>
-
-                {draft.schemas.length === 0 ? (
-                  <div className="rounded-lg border border-border bg-muted p-4 text-sm text-muted-foreground">
-                    No schemas added yet. Click the + Add Schema button to add structured data.
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {draft.schemas.map((schema, i) => (
-                      <div key={i} className="rounded-lg border border-border bg-card p-4">
-                        <div className="mb-2 flex items-center justify-between">
-                          <div className="text-xs font-semibold text-muted-foreground">Schema {i + 1}</div>
-                          <button
-                            type="button"
-                            onClick={() => updateDraft((c) => ({ ...c, schemas: c.schemas.filter((_, idx) => idx !== i) }))}
-                            className="text-xs font-semibold text-destructive hover:underline"
-                          >
-                            Remove
-                          </button>
-                        </div>
-                        <textarea
-                          value={schema}
-                          onChange={(e) => updateDraft((c) => ({ ...c, schemas: c.schemas.map((s, idx) => (idx === i ? e.target.value : s)) }))}
-                          rows={6}
-                          className="w-full rounded-md border border-border bg-muted px-4 py-3 font-mono text-xs text-foreground focus:border-accent focus:outline-none"
-                          placeholder="Paste JSON or a JSON-LD <script> block"
-                        />
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                <div className="mt-2 text-xs text-muted-foreground">
-                  Add multiple JSON-LD schemas (FAQPage, Organization, etc.). Paste valid JSON or a single JSON-LD script block. Each entry renders as a separate script tag.
-                </div>
-              </div>
-
-              <div className="mt-6">
-                <div className="mb-2 flex items-center justify-between">
-                  <label className="block text-sm font-semibold text-foreground">FAQs</label>
-                  <button
-                    type="button"
-                    onClick={() => updateDraft((c) => ({ ...c, faqs: [...c.faqs, JSON.stringify({ q: "", a: "" }, null, 2)] }))}
-                    className="rounded-md border border-border bg-muted px-3 py-2 text-xs font-semibold text-foreground transition-colors hover:border-accent"
-                  >
-                    + Add FAQ
-                  </button>
-                </div>
-
-                {draft.faqs.length === 0 ? (
-                  <div className="rounded-lg border border-border bg-muted p-4 text-sm text-muted-foreground">
-                    No FAQs added yet. Click the + Add FAQ button to add a frequently asked question.
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {draft.faqs.map((faq, i) => {
-                      const parsed = parseFaqJson(faq);
-                      return (
-                        <div key={i} className="rounded-lg border border-border bg-card p-4">
-                          <div className="mb-4 flex items-center justify-between">
-                            <div className="text-xs font-semibold text-muted-foreground">FAQ {i + 1}</div>
-                            <button
-                              type="button"
-                              onClick={() => updateDraft((c) => ({ ...c, faqs: c.faqs.filter((_, idx) => idx !== i) }))}
-                              className="text-xs font-semibold text-destructive hover:underline"
-                            >
-                              Remove
-                            </button>
-                          </div>
-                          <div className="space-y-3">
-                            <div>
-                              <label className="mb-2 block text-sm font-semibold text-foreground">Question</label>
-                              <input
-                                type="text"
-                                value={parsed.q}
-                                onChange={(e) => updateGlobalFAQQuestion(i, e.target.value)}
-                                className="w-full rounded-md border border-border bg-muted px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-accent focus:outline-none"
-                                placeholder="Enter question"
-                              />
-                            </div>
-                            <div>
-                              <label className="mb-2 block text-sm font-semibold text-foreground">Answer</label>
-                              <textarea
-                                value={parsed.a}
-                                onChange={(e) => updateGlobalFAQAnswer(i, e.target.value)}
-                                rows={3}
-                                className="w-full rounded-md border border-border bg-muted px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-accent focus:outline-none"
-                                placeholder="Enter answer"
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-
-                <div className="mt-2 text-xs text-muted-foreground">
-                  Add FAQs for the page level. Questions and answers will be displayed in an accordion on the page.
-                </div>
-              </div>
-            </div>
-
-            {draft.sections.map((section) => (
-              <div key={section.id} className="rounded-lg border border-border bg-card p-4">
-                <div className="mb-4 flex items-center justify-between">
-                  <div>
-                    <div className="font-display text-base font-semibold text-foreground">{section.title}</div>
-                    <div className="text-xs text-muted-foreground">
-                      Section id: {section.id} {section.type === "faq" && "• FAQ Section"}
-                    </div>
-                  </div>
-                </div>
-                <div className="space-y-4">
-                  {section.type === "faq" ? (
-                    <>
-                      <div className="mb-3 flex items-center justify-between">
-                        <label className="text-sm font-semibold text-foreground">FAQs</label>
-                        <button
-                          type="button"
-                          onClick={() => addSectionFAQ(section.id)}
-                          className="rounded-md border border-border bg-muted px-3 py-2 text-xs font-semibold text-foreground transition-colors hover:border-accent"
-                        >
-                          + Add FAQ
-                        </button>
-                      </div>
-                      {!section.faqs || section.faqs.length === 0 ? (
-                        <div className="rounded-lg border border-border bg-muted p-4 text-sm text-muted-foreground">
-                          No FAQs added yet.
-                        </div>
-                      ) : (
-                        <div className="space-y-3">
-                          {section.faqs.map((faq, i) => {
-                            const parsed = parseFaqJson(faq);
-                            return (
-                              <div key={i} className="rounded-lg border border-border bg-muted p-4">
-                                <div className="mb-4 flex items-center justify-between">
-                                  <div className="text-xs font-semibold text-muted-foreground">FAQ {i + 1}</div>
-                                  <button
-                                    type="button"
-                                    onClick={() => removeSectionFAQ(section.id, i)}
-                                    className="text-xs font-semibold text-destructive hover:underline"
-                                  >
-                                    Remove
-                                  </button>
-                                </div>
-                                <div className="space-y-3">
-                                  <div>
-                                    <label className="mb-2 block text-sm font-semibold text-foreground">Question</label>
-                                    <input
-                                      type="text"
-                                      value={parsed.q}
-                                      onChange={(e) => updateSectionFAQQuestion(section.id, i, e.target.value)}
-                                      className="w-full rounded-md border border-border bg-card px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-accent focus:outline-none"
-                                      placeholder="Enter question"
-                                    />
-                                  </div>
-                                  <div>
-                                    <label className="mb-2 block text-sm font-semibold text-foreground">Answer</label>
-                                    <textarea
-                                      value={parsed.a}
-                                      onChange={(e) => updateSectionFAQAnswer(section.id, i, e.target.value)}
-                                      rows={3}
-                                      className="w-full rounded-md border border-border bg-card px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-accent focus:outline-none"
-                                      placeholder="Enter answer"
-                                    />
-                                  </div>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    <>
-                      {section.fields?.map((field, index) => (
-                        <div key={`${section.id}-${index}`}>{renderFieldInput(section.id, field, index)}</div>
-                      ))}
-                      <div className="mt-4 flex">
-                        <button
-                          type="button"
-                          onClick={() => addSectionField(section.id, "image")}
-                          className="rounded-md border border-border bg-muted px-3 py-2 text-xs font-semibold text-foreground transition-colors hover:border-accent"
-                        >
-                          + Add Image
-                        </button>
-                      </div>
-                    </>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+        <Card title="Advanced" description="Structured data (JSON-LD) for search engines.">
+          <JsonListEditor
+            items={draft.schemas}
+            onChange={(schemas) => updateDraft((c) => ({ ...c, schemas }))}
+            addLabel="Add schema"
+            emptyText="No structured data added."
+            placeholder="Paste JSON or a JSON-LD <script> block"
+          />
+        </Card>
+      </EditorBody>
     </div>
   );
+
+  return <ManagerLayout list={list} editor={editor} showEditorOnMobile={Boolean(draft)} />;
 };
 
 export default PageManager;

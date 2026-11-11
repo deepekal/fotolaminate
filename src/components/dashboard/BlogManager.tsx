@@ -4,7 +4,27 @@ import { useEffect, useMemo, useState } from "react";
 import { api, BlogPostRecord } from "@/lib/api";
 import { slugify } from "@/lib/slug";
 import { toast } from "sonner";
-import Link from "next/link";
+import {
+  Card,
+  EditorBody,
+  EditorHeader,
+  EmptyEditor,
+  FaqField,
+  Field,
+  ImageField,
+  JsonListEditor,
+  ListPane,
+  ListRow,
+  ManagerLayout,
+  SeoPreview,
+  btnPrimary,
+  confirmDiscard,
+  inputCls,
+  textareaCls,
+  useSaveShortcut,
+  useUnloadWarning,
+} from "@/components/dashboard/admin-ui";
+import { Plus } from "lucide-react";
 
 type BlogDraft = {
   id?: string;
@@ -87,11 +107,24 @@ const BlogManager = () => {
   const [uploadingCover, setUploadingCover] = useState(false);
   const [uploadingOg, setUploadingOg] = useState(false);
   const [search, setSearch] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [editing, setEditing] = useState(false);
 
   const selectedPost = useMemo(
     () => posts.find((p) => p.id === selectedId) ?? null,
     [posts, selectedId],
   );
+
+  // The list endpoint returns an excerpt, not full content; load the full post when one is opened.
+  const [fullPost, setFullPost] = useState<BlogPostRecord | null>(null);
+  const baseline = useMemo(() => (fullPost ? toDraft(fullPost) : emptyDraft()), [fullPost]);
+  const dirty = editing && JSON.stringify(draft) !== JSON.stringify(baseline);
+  useUnloadWarning(dirty);
+
+  const filtered = useMemo(() => {
+    const q = search.toLowerCase();
+    return posts.filter((p) => p.title.toLowerCase().includes(q) || p.slug.toLowerCase().includes(q));
+  }, [posts, search]);
 
   async function refresh() {
     setLoading(true);
@@ -110,23 +143,49 @@ const BlogManager = () => {
   }, []);
 
   useEffect(() => {
-    if (selectedPost) setDraft(toDraft(selectedPost));
+    if (!selectedPost) return;
+    let active = true;
+    // Show list data straight away, then replace with the full post (including content).
+    setDraft(toDraft(selectedPost));
+    api.blogs
+      .getBySlug(selectedPost.slug)
+      .then((p) => {
+        if (!active) return;
+        setFullPost(p);
+        setDraft(toDraft(p));
+      })
+      .catch(() => {
+        if (active) setFullPost(selectedPost);
+      });
+    return () => {
+      active = false;
+    };
   }, [selectedPost]);
-
-  const seoTitleHint = useMemo(() => {
-    const len = draft.metaTitle.trim().length;
-    if (len === 0) return "If empty, uses the main title.";
-    return `${len} characters`;
-  }, [draft.metaTitle]);
-
-  const seoDescriptionHint = useMemo(() => {
-    const len = draft.metaDescription.trim().length;
-    if (len === 0) return "150-160 characters recommended.";
-    return `${len} characters`;
-  }, [draft.metaDescription]);
 
   function update<K extends keyof BlogDraft>(key: K, value: BlogDraft[K]) {
     setDraft((d) => ({ ...d, [key]: value }));
+  }
+
+  function openPost(id: string) {
+    if (id === selectedId && editing) return;
+    if (!confirmDiscard(dirty)) return;
+    setFullPost(null);
+    setSelectedId(id);
+    setEditing(true);
+  }
+
+  function newPost() {
+    if (!confirmDiscard(dirty)) return;
+    setSelectedId(null);
+    setFullPost(null);
+    setDraft(emptyDraft());
+    setEditing(true);
+  }
+
+  function backToList() {
+    if (!confirmDiscard(dirty)) return;
+    if (fullPost) setDraft(toDraft(fullPost));
+    setEditing(false);
   }
 
   function onTitleChange(title: string) {
@@ -137,6 +196,8 @@ const BlogManager = () => {
   }
 
   async function save() {
+    if (saving) return;
+    setSaving(true);
     try {
       const schemasParsed = draft.schemas
         .map((s) => s.trim())
@@ -175,10 +236,12 @@ const BlogManager = () => {
       if (!payload.slug.trim()) throw new Error("Slug is required");
 
       if (draft.id) {
-        await api.blogs.update(draft.id, payload);
-        toast.success("Post updated");
+        const saved = await api.blogs.update(draft.id, payload);
+        setFullPost(saved);
+        toast.success("Post saved");
       } else {
         const created = await api.blogs.create(payload);
+        setFullPost(created);
         toast.success("Post created");
         setSelectedId(created.id);
       }
@@ -186,19 +249,25 @@ const BlogManager = () => {
       await refresh();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed to save post");
+    } finally {
+      setSaving(false);
     }
   }
 
+  useSaveShortcut(() => void save(), editing);
+
   async function remove() {
     if (!draft.id) return;
-    const ok = window.confirm("Delete this post?");
+    const ok = window.confirm(`Delete "${draft.title}"? This can't be undone.`);
     if (!ok) return;
 
     try {
       await api.blogs.remove(draft.id);
       toast.success("Post deleted");
       setSelectedId(null);
+      setFullPost(null);
       setDraft(emptyDraft());
+      setEditing(false);
       await refresh();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed to delete post");
@@ -222,418 +291,124 @@ const BlogManager = () => {
     }
   }
 
-  function addSchema() {
-    update("schemas", [...draft.schemas, "{"]);
-  }
+  const words = draft.content.replace(/<[^>]+>/g, " ").split(/\s+/).filter(Boolean).length;
 
-  function updateSchema(index: number, value: string) {
-    const next = [...draft.schemas];
-    next[index] = value;
-    update("schemas", next);
-  }
-
-  function removeSchema(index: number) {
-    const next = draft.schemas.filter((_, i) => i !== index);
-    update("schemas", next);
-  }
-
-  function parseFaqJson(faqString: string): { q: string; a: string } {
-    try {
-      return JSON.parse(faqString);
-    } catch {
-      return { q: "", a: "" };
-    }
-  }
-
-  function faqToJson(faq: { q: string; a: string }): string {
-    return JSON.stringify(faq, null, 2);
-  }
-
-  function updateFAQQuestion(faqIndex: number, question: string) {
-    const nextFaqs = draft.faqs.map((faq, index) => {
-      if (index !== faqIndex) return faq;
-      const parsed = parseFaqJson(faq);
-      return faqToJson({ ...parsed, q: question });
-    });
-    update("faqs", nextFaqs);
-  }
-
-  function updateFAQAnswer(faqIndex: number, answer: string) {
-    const nextFaqs = draft.faqs.map((faq, index) => {
-      if (index !== faqIndex) return faq;
-      const parsed = parseFaqJson(faq);
-      return faqToJson({ ...parsed, a: answer });
-    });
-    update("faqs", nextFaqs);
-  }
-
-  return (
-    <div className="grid gap-6 lg:grid-cols-12">
-      <div className="lg:col-span-4">
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="font-display text-lg font-bold text-foreground">Posts</h2>
-          <button
-            type="button"
-            onClick={() => {
-              setSelectedId(null);
-              setDraft(emptyDraft());
-            }}
-            className="rounded-md border border-border bg-muted px-3 py-2 text-xs font-semibold text-foreground transition-colors hover:border-accent"
-          >
-            Create new
-          </button>
-        </div>
-
-        <input
-          type="search"
-          placeholder="Search posts…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="mb-3 w-full rounded-md border border-border bg-muted px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-accent focus:outline-none"
+  const list = (
+    <ListPane
+      title="Posts"
+      count={filtered.length}
+      search={search}
+      onSearch={setSearch}
+      onNew={newPost}
+      newLabel="New post"
+      loading={loading}
+      emptyText={posts.length === 0 ? "No posts yet. Write your first one." : "No posts match your search."}
+    >
+      {filtered.map((p) => (
+        <ListRow
+          key={p.id}
+          active={editing && p.id === selectedId}
+          onClick={() => openPost(p.id)}
+          title={p.title}
+          meta={new Date(p.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+          thumb={p.cover_image_url}
+          published={p.published}
         />
+      ))}
+    </ListPane>
+  );
 
-        <div className="space-y-3">
-          {loading ? (
-            <div className="rounded-lg border border-border bg-muted p-4 text-sm text-muted-foreground">Loading…</div>
-          ) : posts.length === 0 ? (
-            <div className="rounded-lg border border-border bg-muted p-4 text-sm text-muted-foreground">
-              No posts yet.
-            </div>
-          ) : (
-            posts
-              .filter((p) => p.title.toLowerCase().includes(search.toLowerCase()) || p.slug.toLowerCase().includes(search.toLowerCase()))
-              .map((p) => (
-              <button
-                key={p.id}
-                type="button"
-                onClick={() => setSelectedId(p.id)}
-                className={`w-full rounded-lg border p-4 text-left shadow-industrial transition-colors ${
-                  p.id === selectedId ? "border-accent bg-card" : "border-border bg-muted hover:border-accent/50"
-                }`}
-              >
-                <div className="mb-1 font-display text-base font-bold text-foreground">{p.title}</div>
-                <div className="text-xs text-muted-foreground">/{p.slug}</div>
-              </button>
-            ))
-          )}
-        </div>
-      </div>
+  const editor = !editing ? (
+    <EmptyEditor
+      title="Select a post"
+      text="Choose a post from the list to edit it, or write a new one."
+      action={
+        <button type="button" onClick={newPost} className={btnPrimary}>
+          <Plus size={16} aria-hidden="true" /> New post
+        </button>
+      }
+    />
+  ) : (
+    <div>
+      <EditorHeader
+        kicker={draft.id ? "Edit post" : "New post"}
+        title={draft.title || "Untitled post"}
+        dirty={dirty}
+        published={draft.published}
+        onPublishedChange={(v) => update("published", v)}
+        viewHref={draft.id && draft.slug.trim() ? `/blogs/${draft.slug}` : undefined}
+        onDelete={draft.id ? remove : undefined}
+        onSave={() => void save()}
+        saving={saving}
+        saveLabel={draft.id ? "Save changes" : "Create post"}
+        onBack={backToList}
+      />
+      <EditorBody>
+        <Card title="Basics">
+          <Field label="Title">
+            <input value={draft.title} onChange={(e) => onTitleChange(e.target.value)} maxLength={140} className={`${inputCls} h-11 text-base font-medium`} placeholder="Post title" />
+          </Field>
+          <Field label="Web address" hint={`www.fotolaminate.com/blogs/${draft.slug || "…"} — filled in from the title; you can change it.`}>
+            <input value={draft.slug} onChange={(e) => update("slug", slugify(e.target.value))} maxLength={140} className={inputCls} placeholder="my-post-slug" />
+          </Field>
+        </Card>
 
-      <div className="lg:col-span-8">
-        <div className="mb-4 rounded-lg border border-border bg-muted p-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <div className="font-display text-lg font-bold text-foreground">Create Post</div>
-              <div className="text-xs text-muted-foreground">
-                Use the editor below to manage the blog content that powers every site.
-              </div>
-            </div>
+        <Card title="Article" description={`${words} words · about ${Math.max(1, Math.round(words / 200))} min read`}>
+          <Field label="Content" hint="HTML is supported (headings, lists, links).">
+            <textarea value={draft.content} onChange={(e) => update("content", e.target.value)} rows={18} className={textareaCls} placeholder="Write the post here" />
+          </Field>
+        </Card>
 
-            <div className="flex items-center gap-3">
-              {draft.slug.trim() && (
-                <Link
-                  href={`/blogs/${draft.slug}`}
-                  className="rounded-md border border-border bg-card px-4 py-2 text-sm font-bold text-foreground transition-colors hover:border-accent"
-                >
-                  View
-                </Link>
-              )}
-
-              <label className="flex items-center gap-2 text-xs font-semibold text-foreground">
-                <input
-                  type="checkbox"
-                  checked={draft.published}
-                  onChange={(e) => update("published", e.target.checked)}
-                />
-                Published
-              </label>
-
-              <button
-                type="button"
-                onClick={save}
-                className="rounded-md gradient-accent px-4 py-2 text-sm font-bold text-accent-foreground transition-opacity hover:opacity-90"
-              >
-                {draft.id ? "Update Post" : "Create Post"}
-              </button>
-              {draft.id && (
-                <button
-                  type="button"
-                  onClick={remove}
-                  className="rounded-md border border-border bg-card px-4 py-2 text-sm font-bold text-foreground transition-colors hover:border-destructive hover:text-destructive"
-                >
-                  Delete
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className="space-y-5">
-          <div className="grid gap-4 md:grid-cols-2">
-            <div>
-              <label className="mb-2 block text-sm font-semibold text-foreground">Title</label>
-              <input
-                value={draft.title}
-                onChange={(e) => onTitleChange(e.target.value)}
-                maxLength={140}
-                className="w-full rounded-md border border-border bg-card px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-accent focus:outline-none"
-                placeholder="Post title"
-              />
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm font-semibold text-foreground">Slug</label>
-              <input
-                value={draft.slug}
-                onChange={(e) => update("slug", slugify(e.target.value))}
-                maxLength={140}
-                className="w-full rounded-md border border-border bg-card px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-accent focus:outline-none"
-                placeholder="my-post-slug"
-              />
-              <div className="mt-1 text-xs text-muted-foreground">Auto-generated from the title, but you can override it.</div>
-            </div>
-          </div>
-
-          <div>
-            <label className="mb-2 block text-sm font-semibold text-foreground">Meta Title (SEO)</label>
-            <input
-              value={draft.metaTitle}
-              onChange={(e) => update("metaTitle", e.target.value)}
-              maxLength={80}
-              className="w-full rounded-md border border-border bg-card px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-accent focus:outline-none"
-              placeholder="50-60 characters recommended"
-            />
-            <div className="mt-1 text-xs text-muted-foreground">Optimized title for search engines (50-60 chars). {seoTitleHint}</div>
-          </div>
-
-          <div>
-            <label className="mb-2 block text-sm font-semibold text-foreground">Meta Description (SEO)</label>
-            <textarea
-              value={draft.metaDescription}
-              onChange={(e) => update("metaDescription", e.target.value)}
-              rows={3}
-              maxLength={200}
-              className="w-full rounded-md border border-border bg-card px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-accent focus:outline-none"
-              placeholder="150-160 characters recommended"
-            />
-            <div className="mt-1 text-xs text-muted-foreground">Brief summary for search results and social media. {seoDescriptionHint}</div>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-2">
-            <div>
-              <label className="mb-2 block text-sm font-semibold text-foreground">Tags</label>
-              <input
-                value={draft.tags}
-                onChange={(e) => update("tags", e.target.value)}
-                className="w-full rounded-md border border-border bg-card px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-accent focus:outline-none"
-                placeholder="marketing, release, seo"
-              />
-              <div className="mt-1 text-xs text-muted-foreground">Comma-separated. Used for filtering and related posts.</div>
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm font-semibold text-foreground">Keywords (SEO)</label>
-              <input
-                value={draft.keywords}
-                onChange={(e) => update("keywords", e.target.value)}
-                className="w-full rounded-md border border-border bg-card px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-accent focus:outline-none"
-                placeholder="design courses, UI UX, interior design"
-              />
-              <div className="mt-1 text-xs text-muted-foreground">Comma-separated. Defaults to tags if empty.</div>
-            </div>
-          </div>
-
-          <div>
-            <div className="mb-2 flex items-center justify-between">
-              <label className="block text-sm font-semibold text-foreground">Structured Data Schemas (JSON-LD)</label>
-              <button
-                type="button"
-                onClick={addSchema}
-                className="rounded-md border border-border bg-muted px-3 py-2 text-xs font-semibold text-foreground transition-colors hover:border-accent"
-              >
-                + Add Schema
-              </button>
-            </div>
-
-            {draft.schemas.length === 0 ? (
-              <div className="rounded-lg border border-border bg-muted p-4 text-sm text-muted-foreground">
-                No schemas added yet. Click the + Add Schema button to add structured data.
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {draft.schemas.map((schema, i) => (
-                  <div key={i} className="rounded-lg border border-border bg-card p-4">
-                    <div className="mb-2 flex items-center justify-between">
-                      <div className="text-xs font-semibold text-muted-foreground">Schema {i + 1}</div>
-                      <button
-                        type="button"
-                        onClick={() => removeSchema(i)}
-                        className="text-xs font-semibold text-destructive hover:underline"
-                      >
-                        Remove
-                      </button>
-                    </div>
-                    <textarea
-                      value={schema}
-                      onChange={(e) => updateSchema(i, e.target.value)}
-                      rows={6}
-                      className="w-full rounded-md border border-border bg-muted px-4 py-3 font-mono text-xs text-foreground focus:border-accent focus:outline-none"
-                      placeholder='Paste JSON or a JSON-LD <script> block'
-                    />
-                  </div>
-                ))}
-              </div>
-            )}
-
-            <div className="mt-2 text-xs text-muted-foreground">
-              Add multiple JSON-LD schemas (BlogPosting, FAQPage, etc.). Paste valid JSON or a single JSON-LD script
-              block. Each entry renders as a separate script tag.
-            </div>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-2">
-            <div>
-              <label className="mb-2 block text-sm font-semibold text-foreground">Cover Image URL</label>
-              <input
-                value={draft.coverImageUrl}
-                onChange={(e) => update("coverImageUrl", e.target.value)}
-                className="w-full rounded-md border border-border bg-card px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-accent focus:outline-none"
-                placeholder="https://"
-              />
-              <div className="mt-2 flex items-center justify-between gap-3">
-                <label className="text-xs font-semibold text-muted-foreground">
-                  Or upload an image
-                  <input
-                    type="file"
-                    accept="image/png,image/jpeg,image/webp"
-                    onChange={(e) => {
-                      const f = e.target.files?.[0];
-                      if (f) void uploadImage(f, "cover");
-                    }}
-                    className="mt-2 block w-full text-xs"
-                    disabled={uploadingCover}
-                  />
-                </label>
-                <div className="text-xs text-muted-foreground">Only JPEG, PNG, or WebP files are accepted.</div>
-              </div>
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm font-semibold text-foreground">OG Image URL (Social Sharing)</label>
-              <input
-                value={draft.ogImageUrl}
-                onChange={(e) => update("ogImageUrl", e.target.value)}
-                className="w-full rounded-md border border-border bg-card px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-accent focus:outline-none"
-                placeholder="https://"
-              />
-              <div className="mt-1 text-xs text-muted-foreground">Specific image for social media previews. If empty, uses cover image.</div>
-              <div className="mt-2">
-                <label className="text-xs font-semibold text-muted-foreground">
-                  Or upload an image
-                  <input
-                    type="file"
-                    accept="image/png,image/jpeg,image/webp"
-                    onChange={(e) => {
-                      const f = e.target.files?.[0];
-                      if (f) void uploadImage(f, "og");
-                    }}
-                    className="mt-2 block w-full text-xs"
-                    disabled={uploadingOg}
-                  />
-                </label>
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <label className="mb-2 block text-sm font-semibold text-foreground">Content</label>
-            <textarea
-              value={draft.content}
-              onChange={(e) => update("content", e.target.value)}
-              rows={12}
-              className="w-full rounded-md border border-border bg-card px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-accent focus:outline-none"
-              placeholder="Write the post content here"
+        <Card title="Images">
+          <div className="grid gap-6 md:grid-cols-2">
+            <ImageField label="Cover image" value={draft.coverImageUrl} onChange={(v) => update("coverImageUrl", v)} onUpload={(f) => void uploadImage(f, "cover")} uploading={uploadingCover} />
+            <ImageField
+              label="Social sharing image"
+              value={draft.ogImageUrl}
+              onChange={(v) => update("ogImageUrl", v)}
+              onUpload={(f) => void uploadImage(f, "og")}
+              uploading={uploadingOg}
+              hint="Uses the cover image if empty."
             />
           </div>
+        </Card>
 
-          <div>
-            <div className="mb-2 flex items-center justify-between">
-              <label className="block text-sm font-semibold text-foreground">FAQs</label>
-              <button
-                type="button"
-                onClick={() => update("faqs", [...draft.faqs, JSON.stringify({ q: "", a: "" }, null, 2)])}
-                className="rounded-md border border-border bg-muted px-3 py-2 text-xs font-semibold text-foreground transition-colors hover:border-accent"
-              >
-                + Add FAQ
-              </button>
-            </div>
-
-            {draft.faqs.length === 0 ? (
-              <div className="rounded-lg border border-border bg-muted p-4 text-sm text-muted-foreground">
-                No FAQs added yet. Click the + Add FAQ button to add a frequently asked question.
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {draft.faqs.map((faq, i) => {
-                  const parsed = parseFaqJson(faq);
-                  return (
-                    <div key={i} className="rounded-lg border border-border bg-card p-4">
-                      <div className="mb-4 flex items-center justify-between">
-                        <div className="text-xs font-semibold text-muted-foreground">FAQ {i + 1}</div>
-                        <button
-                          type="button"
-                          onClick={() => update("faqs", draft.faqs.filter((_, idx) => idx !== i))}
-                          className="text-xs font-semibold text-destructive hover:underline"
-                        >
-                          Remove
-                        </button>
-                      </div>
-                      <div className="space-y-3">
-                        <div>
-                          <label className="mb-2 block text-sm font-semibold text-foreground">Question</label>
-                          <input
-                            type="text"
-                            value={parsed.q}
-                            onChange={(e) => updateFAQQuestion(i, e.target.value)}
-                            className="w-full rounded-md border border-border bg-muted px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-accent focus:outline-none"
-                            placeholder="Enter question"
-                          />
-                        </div>
-                        <div>
-                          <label className="mb-2 block text-sm font-semibold text-foreground">Answer</label>
-                          <textarea
-                            value={parsed.a}
-                            onChange={(e) => updateFAQAnswer(i, e.target.value)}
-                            rows={3}
-                            className="w-full rounded-md border border-border bg-muted px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-accent focus:outline-none"
-                            placeholder="Enter answer"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-
-            <div className="mt-2 text-xs text-muted-foreground">
-              Add FAQs. Each FAQ will be displayed in an accordion on the blog page.
-            </div>
+        <Card title="Search engine (SEO)" description="How this post appears in Google results.">
+          <SeoPreview title={draft.metaTitle || draft.title} description={draft.metaDescription} path={`/blogs/${draft.slug}`} />
+          <Field label="SEO title" counter={{ value: draft.metaTitle.trim().length, ideal: [50, 60] }} hint="Uses the post title if empty.">
+            <input value={draft.metaTitle} onChange={(e) => update("metaTitle", e.target.value)} maxLength={80} className={inputCls} />
+          </Field>
+          <Field label="SEO description" counter={{ value: draft.metaDescription.trim().length, ideal: [140, 160] }}>
+            <textarea value={draft.metaDescription} onChange={(e) => update("metaDescription", e.target.value)} rows={3} maxLength={200} className={textareaCls} />
+          </Field>
+          <div className="grid gap-5 md:grid-cols-2">
+            <Field label="Tags" hint="Separate with commas.">
+              <input value={draft.tags} onChange={(e) => update("tags", e.target.value)} className={inputCls} placeholder="Cold lamination, Maintenance" />
+            </Field>
+            <Field label="Keywords" hint="Separate with commas. Uses the tags if empty.">
+              <input value={draft.keywords} onChange={(e) => update("keywords", e.target.value)} className={inputCls} />
+            </Field>
           </div>
+        </Card>
 
-          <div className="flex items-center justify-end gap-3">
-            <button
-              type="button"
-              onClick={save}
-              className="rounded-md gradient-accent px-5 py-3 font-display text-sm font-bold uppercase tracking-wider text-accent-foreground transition-opacity hover:opacity-90"
-            >
-              {draft.id ? "Update Post" : "Create Post"}
-            </button>
-          </div>
-        </div>
-      </div>
+        <Card title="FAQs" description="Shown as questions and answers at the end of the post.">
+          <FaqField faqs={draft.faqs} onChange={(faqs) => update("faqs", faqs)} label="Questions" />
+        </Card>
+
+        <Card title="Advanced" description="Structured data (JSON-LD) for search engines. Optional.">
+          <JsonListEditor
+            items={draft.schemas}
+            onChange={(schemas) => update("schemas", schemas)}
+            addLabel="Add schema"
+            emptyText="No structured data added."
+            placeholder="Paste JSON or a JSON-LD <script> block"
+          />
+        </Card>
+      </EditorBody>
     </div>
   );
+
+  return <ManagerLayout list={list} editor={editor} showEditorOnMobile={editing} />;
 };
 
 export default BlogManager;

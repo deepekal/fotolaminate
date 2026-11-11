@@ -103,6 +103,9 @@ export default function EnquireActions() {
     return { waHref, callHref };
   }, [pathname, productName]);
 
+  // Not part of the admin dashboard.
+  if (pathname.startsWith("/dashboard")) return null;
+
   return (
     <div className="fixed bottom-5 right-5 z-[100] flex flex-col items-end gap-3">
       <AnimatePresence>
