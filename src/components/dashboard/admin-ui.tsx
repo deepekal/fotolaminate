@@ -8,6 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import FAQEditor from "@/components/dashboard/FAQEditor";
 import { api, type UploadedImage } from "@/lib/api";
 import type { PageFAQ } from "@/lib/page-types";
+import { useConfirm } from "@/components/dashboard/confirm";
 
 /* ------------------------------------------------------------------ styles */
 
@@ -110,8 +111,8 @@ export const Field = ({
 };
 
 /** White panel in the main editor column. */
-export const Panel = ({ title, actions, children }: { title: string; actions?: ReactNode; children: ReactNode }) => (
-  <section className="rounded-md border border-slate-200 bg-white shadow-sm">
+export const Panel = ({ title, actions, children, id }: { title: string; actions?: ReactNode; children: ReactNode; id?: string }) => (
+  <section id={id} className="scroll-mt-6 rounded-md border border-slate-200 bg-white shadow-sm">
     <header className="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-3">
       <h3 className="text-sm font-semibold text-slate-900">{title}</h3>
       {actions}
@@ -224,7 +225,7 @@ export const PublishBox = ({
         <Switch checked={published} onCheckedChange={onPublishedChange} aria-label="Published" />
       </label>
     ) : null}
-    {!isNew ? <p className="text-slate-600">Last updated: {formatDate(updatedAt)}</p> : <p className="text-slate-600">Not saved yet</p>}
+    {isNew ? <p className="text-slate-600">Not saved yet</p> : updatedAt ? <p className="text-slate-600">Last updated: {formatDate(updatedAt)}</p> : null}
     {viewHref ? (
       <Link href={viewHref} target="_blank" className="inline-flex items-center gap-1.5 font-medium text-accent hover:underline">
         <ExternalLink size={14} aria-hidden="true" /> View on website
@@ -352,7 +353,7 @@ export function AdminTable<T extends { id: string }>({
                 </th>
               ) : null}
               {columns.map((c) => (
-                <th key={c.label} className={`py-2.5 pr-4 ${c.className ?? ""}`}>
+                <th key={c.label} className={`py-2.5 pr-4 first:pl-6 ${c.className ?? ""}`}>
                   {c.label}
                 </th>
               ))}
@@ -446,7 +447,7 @@ export const TitleCell = ({
   viewHref?: string;
   extra?: { label: string; onClick: () => void; danger?: boolean }[];
 }) => (
-  <td className="py-2.5 pr-4">
+  <td className="py-2.5 pr-4 first:pl-6">
     <div className="flex items-center gap-3">
       {thumb !== undefined ? <Thumb src={thumb} /> : null}
       <div className="min-w-0">
@@ -569,6 +570,7 @@ export const MediaPicker = ({ open, onClose, onSelect }: { open: boolean; onClos
 
 /** Image picker with preview: upload, choose from library, or paste an address. */
 export const ImageBox = ({ value, onChange, emptyHint }: { value: string; onChange: (v: string) => void; emptyHint?: string }) => {
+  const confirm = useConfirm();
   const [pickerOpen, setPickerOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [showUrl, setShowUrl] = useState(false);
@@ -627,7 +629,18 @@ export const ImageBox = ({ value, onChange, emptyHint }: { value: string; onChan
           {showUrl ? "Hide address" : "Image address"}
         </button>
         {value ? (
-          <button type="button" onClick={() => onChange("")} className="text-sm font-medium text-red-600 hover:underline">
+          <button
+            type="button"
+            onClick={async () => {
+              const ok = await confirm({
+                title: "Remove this image?",
+                description: "It will be removed from this item when you save. The file itself stays in the Media library.",
+                confirmLabel: "Remove image",
+              });
+              if (ok) onChange("");
+            }}
+            className="text-sm font-medium text-red-600 hover:underline"
+          >
             Remove
           </button>
         ) : null}
@@ -640,6 +653,7 @@ export const ImageBox = ({ value, onChange, emptyHint }: { value: string; onChan
 
 /** Several images (gallery). Value is a comma-separated list of addresses. */
 export const GalleryField = ({ value, onChange }: { value: string; onChange: (v: string) => void }) => {
+  const confirm = useConfirm();
   const urls = useMemo(() => value.split(",").map((s) => s.trim()).filter(Boolean), [value]);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -669,7 +683,14 @@ export const GalleryField = ({ value, onChange }: { value: string; onChange: (v:
               <img src={u} alt="" className="aspect-square w-full rounded border border-slate-200 bg-slate-50 object-contain p-1" />
               <button
                 type="button"
-                onClick={() => set(urls.filter((_, idx) => idx !== i))}
+                onClick={async () => {
+                  const ok = await confirm({
+                    title: "Remove this gallery image?",
+                    description: "It will be removed from the gallery when you save. The file itself stays in the Media library.",
+                    confirmLabel: "Remove image",
+                  });
+                  if (ok) set(urls.filter((_, idx) => idx !== i));
+                }}
                 className="absolute right-1 top-1 rounded-full bg-white/90 p-1 text-slate-600 shadow hover:text-red-600"
                 aria-label="Remove image"
               >
@@ -725,7 +746,16 @@ export const JsonListEditor = ({
   addLabel: string;
   emptyText: string;
   placeholder: string;
-}) => (
+}) => {
+  const confirm = useConfirm();
+  async function remove(i: number) {
+    if (items[i].trim() && items[i].trim() !== "{") {
+      const ok = await confirm({ title: `Remove schema ${i + 1}?`, description: "This structured data will be removed when you save.", confirmLabel: "Remove" });
+      if (!ok) return;
+    }
+    onChange(items.filter((_, idx) => idx !== i));
+  }
+  return (
   <div className="space-y-3">
     {items.length === 0 ? (
       <p className="text-sm text-slate-500">{emptyText}</p>
@@ -734,7 +764,7 @@ export const JsonListEditor = ({
         <div key={i} className="rounded border border-slate-200">
           <div className="flex items-center justify-between border-b border-slate-100 px-3 py-2">
             <span className="text-xs font-semibold text-slate-500">Schema {i + 1}</span>
-            <button type="button" onClick={() => onChange(items.filter((_, idx) => idx !== i))} className="text-xs font-semibold text-red-600 hover:underline">
+            <button type="button" onClick={() => void remove(i)} className="text-xs font-semibold text-red-600 hover:underline">
               Remove
             </button>
           </div>
@@ -753,7 +783,8 @@ export const JsonListEditor = ({
       <Plus size={15} aria-hidden="true" /> {addLabel}
     </button>
   </div>
-);
+  );
+};
 
 /* --------------------------------------------------------- specifications */
 
@@ -790,6 +821,7 @@ function rowsToSpecs(rows: SpecRow[]): string {
  * while editing). Unusual data falls back to a raw JSON box so nothing is lost.
  */
 export const SpecsEditor = ({ value, onChange }: { value: string; onChange: (json: string) => void }) => {
+  const confirm = useConfirm();
   const parsed = useMemo(() => specsToRows(value), [value]);
   const [rawMode, setRawMode] = useState(parsed === null);
   // Working copy, so rows that are still empty (not yet saved into the JSON) stay visible.
@@ -852,7 +884,22 @@ export const SpecsEditor = ({ value, onChange }: { value: string; onChange: (jso
             />
             {r.list ? <span className="mt-1 block text-[11px] text-slate-500">List — separate items with commas</span> : null}
           </div>
-          <button type="button" onClick={() => setRows(rows.filter((_, idx) => idx !== i))} className={`${btnGhost} h-10 px-2.5`} aria-label="Remove specification">
+          <button
+            type="button"
+            onClick={async () => {
+              if (r.key.trim() || r.value.trim()) {
+                const ok = await confirm({
+                  title: `Remove “${r.key.trim() || "this specification"}”?`,
+                  description: "This row will be removed when you save.",
+                  confirmLabel: "Remove",
+                });
+                if (!ok) return;
+              }
+              setRows(rows.filter((_, idx) => idx !== i));
+            }}
+            className={`${btnGhost} h-10 px-2.5`}
+            aria-label="Remove specification"
+          >
             <Trash2 size={15} />
           </button>
         </div>

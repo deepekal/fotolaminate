@@ -5,12 +5,14 @@ import { Copy, Loader2, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { api, type UploadedImage } from "@/lib/api";
 import { PageTitle, btnPrimary, formatDate } from "@/components/dashboard/admin-ui";
+import { useConfirm } from "@/components/dashboard/confirm";
 
 function kb(bytes: number) {
   return bytes > 1024 * 1024 ? `${(bytes / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`;
 }
 
 const MediaLibrary = () => {
+  const confirm = useConfirm();
   const [items, setItems] = useState<UploadedImage[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -49,7 +51,16 @@ const MediaLibrary = () => {
   }
 
   async function remove(it: UploadedImage) {
-    if (!window.confirm(`Delete ${it.name}?\n\nIf this image is used on a product, post or page, it will stop showing there.`)) return;
+    const ok = await confirm({
+      title: "Delete this image?",
+      description: (
+        <>
+          <span className="font-medium text-slate-800">{it.name}</span> will be deleted permanently. If it's used on a product, post or page, it will stop showing there.
+        </>
+      ),
+      confirmLabel: "Delete image",
+    });
+    if (!ok) return;
     try {
       await api.uploads.remove(it.name);
       setItems((list) => list.filter((x) => x.name !== it.name));

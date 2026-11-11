@@ -5,6 +5,7 @@ import PageManager from "@/components/dashboard/PageManager";
 import ProductManager from "@/components/dashboard/ProductManager";
 import MediaLibrary from "@/components/dashboard/MediaLibrary";
 import Overview from "@/components/dashboard/Overview";
+import { ConfirmProvider } from "@/components/dashboard/confirm";
 import { btnPrimary, inputCls } from "@/components/dashboard/admin-ui";
 import { Eye, EyeOff, ExternalLink, FileText, Images, LayoutDashboard, LayoutTemplate, Loader2, LogOut, Menu, Package, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -246,6 +247,7 @@ const DashboardPage = () => {
   const sectionProps = { routeId: route.id, navigate, onDirtyChange };
 
   return (
+    <ConfirmProvider>
     <div className="min-h-screen bg-slate-100">
       {/* Sidebar (desktop) */}
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-60 bg-[hsl(213_62%_13%)] lg:block">{nav}</aside>
@@ -275,6 +277,7 @@ const DashboardPage = () => {
         </main>
       </div>
     </div>
+    </ConfirmProvider>
   );
 };
 

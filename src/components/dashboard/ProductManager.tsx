@@ -29,6 +29,7 @@ import {
   useUnloadWarning,
 } from "@/components/dashboard/admin-ui";
 import RichTextEditor from "@/components/dashboard/RichTextEditor";
+import { useConfirm } from "@/components/dashboard/confirm";
 import { Loader2, Plus } from "lucide-react";
 
 type ProductDraft = {
@@ -187,6 +188,7 @@ type SectionProps = {
 };
 
 const ProductManager = ({ routeId, navigate, onDirtyChange }: SectionProps) => {
+  const confirm = useConfirm();
   const [loading, setLoading] = useState(true);
   const [products, setProducts] = useState<ProductRecord[]>([]);
   const [draft, setDraft] = useState<ProductDraft>(() => emptyDraft());
@@ -322,7 +324,12 @@ const ProductManager = ({ routeId, navigate, onDirtyChange }: SectionProps) => {
   useSaveShortcut(() => void save(), editing);
 
   async function removeProduct(p: Pick<ProductRecord, "id" | "name">) {
-    if (!window.confirm(`Delete "${p.name}"? This can't be undone.`)) return false;
+    const ok = await confirm({
+      title: `Delete "${p.name}"?`,
+      description: "The product will be removed from the website permanently. This can't be undone.",
+      confirmLabel: "Delete product",
+    });
+    if (!ok) return false;
     try {
       await api.products.remove(p.id);
       toast.success("Product deleted");
@@ -349,7 +356,20 @@ const ProductManager = ({ routeId, navigate, onDirtyChange }: SectionProps) => {
 
   async function bulk(action: string, ids: string[]) {
     const targets = products.filter((p) => ids.includes(p.id));
-    if (action === "delete" && !window.confirm(`Delete ${targets.length} product(s)? This can't be undone.`)) return;
+    if (
+      action === "delete" &&
+      !(await confirm({
+        title: `Delete ${targets.length} product${targets.length === 1 ? "" : "s"}?`,
+        description: (
+          <>
+            {targets.slice(0, 5).map((t) => t.name).join(", ")}
+            {targets.length > 5 ? ` and ${targets.length - 5} more` : ""}. They will be removed from the website permanently. This can't be undone.
+          </>
+        ),
+        confirmLabel: `Delete ${targets.length}`,
+      }))
+    )
+      return;
     let done = 0;
     for (const p of targets) {
       try {
@@ -530,7 +550,11 @@ const ProductManager = ({ routeId, navigate, onDirtyChange }: SectionProps) => {
                 draft.id
                   ? () =>
                       void removeProduct({ id: draft.id as string, name: draft.name }).then((ok) => {
-                        if (ok) navigate("/products");
+                        if (ok) {
+                          // The item is gone, so its unsaved edits are moot — don't warn.
+                          onDirtyChange(false);
+                          navigate("/products");
+                        }
                       })
                   : undefined
               }

@@ -25,6 +25,7 @@ import {
   useUnloadWarning,
 } from "@/components/dashboard/admin-ui";
 import { Loader2, Plus, RefreshCw, X } from "lucide-react";
+import { useConfirm } from "@/components/dashboard/confirm";
 
 type DraftSection = Omit<PageSection, 'faqs'> & {
   faqs?: string[];
@@ -73,6 +74,7 @@ type SectionProps = {
 };
 
 const PageManager = ({ routeId, navigate, onDirtyChange }: SectionProps) => {
+  const confirm = useConfirm();
   const [pages, setPages] = useState<PageContent[]>([]);
   const selectedId = routeId ?? null;
   const [draft, setDraft] = useState<PageDraft | null>(null);
@@ -284,7 +286,20 @@ const PageManager = ({ routeId, navigate, onDirtyChange }: SectionProps) => {
   function renderFieldInput(sectionId: string, field: PageField, index: number) {
     const value = field.value ?? "";
     const removeBtn = (
-      <button type="button" onClick={() => removeSectionField(sectionId, index)} className={`${btnGhost} h-7 px-2 text-xs`} aria-label={`Remove ${fieldLabel(field)}`}>
+      <button
+        type="button"
+        onClick={async () => {
+          if (value.trim()) {
+            const ok = await confirm({
+              title: `Remove “${fieldLabel(field)}”?`,
+              description: "This content will be removed from the page when you save.",
+              confirmLabel: "Remove",
+            });
+            if (!ok) return;
+          }
+          removeSectionField(sectionId, index);
+        }}
+        className={`${btnGhost} h-7 px-2 text-xs`} aria-label={`Remove ${fieldLabel(field)}`}>
         <X size={14} aria-hidden="true" />
       </button>
     );
@@ -385,6 +400,7 @@ const PageManager = ({ routeId, navigate, onDirtyChange }: SectionProps) => {
             {draft.sections.map((section) => (
               <Panel
                 key={section.id}
+                id={`section-${section.id}`}
                 title={section.title}
                 actions={
                   section.type === "faq" ? undefined : (
@@ -413,7 +429,7 @@ const PageManager = ({ routeId, navigate, onDirtyChange }: SectionProps) => {
               </Panel>
             ))}
 
-            <Panel title="SEO">
+            <Panel title="SEO" id="section-seo">
               <SeoPreview title={draft.seo.title} description={draft.seo.description} path={draft.path} />
               <Field label="SEO title" counter={{ value: draft.seo.title.trim().length, ideal: [50, 60] }}>
                 <input type="text" value={draft.seo.title} onChange={(e) => updateDraft((current) => ({ ...current, seo: { ...current.seo, title: e.target.value } }))} className={inputCls} />
@@ -426,7 +442,7 @@ const PageManager = ({ routeId, navigate, onDirtyChange }: SectionProps) => {
               </Field>
             </Panel>
 
-            <Panel title="Page FAQs">
+            <Panel title="Page FAQs" id="section-faqs">
               <FaqField faqs={draft.faqs} onChange={(faqs) => updateDraft((c) => ({ ...c, faqs }))} label="Page-level questions" />
             </Panel>
 
@@ -446,10 +462,16 @@ const PageManager = ({ routeId, navigate, onDirtyChange }: SectionProps) => {
             <PublishBox isNew={false} viewHref={draft.path} onSave={() => void save()} saving={saving} saveLabel="Update page" />
             <section className="rounded-md border border-slate-200 bg-white p-4 text-sm shadow-sm">
               <p className="font-semibold text-slate-900">On this page</p>
-              <ul className="mt-2 space-y-1 text-slate-600">
-                {draft.sections.map((sec) => (
-                  <li key={sec.id} className="truncate">
-                    {sec.title}
+              <ul className="mt-2 space-y-0.5">
+                {[...draft.sections.map((sec) => ({ id: sec.id, title: sec.title })), { id: "seo", title: "SEO" }, { id: "faqs", title: `Page FAQs (${draft.faqs.length})` }].map((sec) => (
+                  <li key={sec.id}>
+                    <button
+                      type="button"
+                      onClick={() => document.getElementById(`section-${sec.id}`)?.scrollIntoView({ behavior: "smooth", block: "start" })}
+                      className="block w-full truncate rounded px-2 py-1 text-left text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                    >
+                      {sec.title}
+                    </button>
                   </li>
                 ))}
               </ul>

@@ -27,6 +27,7 @@ import {
   useUnloadWarning,
 } from "@/components/dashboard/admin-ui";
 import RichTextEditor from "@/components/dashboard/RichTextEditor";
+import { useConfirm } from "@/components/dashboard/confirm";
 import { stripHtml } from "@/lib/rich-text";
 import { Loader2, Plus } from "lucide-react";
 
@@ -129,6 +130,7 @@ type SectionProps = {
 };
 
 const BlogManager = ({ routeId, navigate, onDirtyChange }: SectionProps) => {
+  const confirm = useConfirm();
   const [loading, setLoading] = useState(true);
   const [posts, setPosts] = useState<BlogPostRecord[]>([]);
   const [draft, setDraft] = useState<BlogDraft>(() => emptyDraft());
@@ -273,7 +275,12 @@ const BlogManager = ({ routeId, navigate, onDirtyChange }: SectionProps) => {
   useSaveShortcut(() => void save(), editing);
 
   async function removePost(p: Pick<BlogPostRecord, "id" | "title">) {
-    if (!window.confirm(`Delete "${p.title}"? This can't be undone.`)) return false;
+    const ok = await confirm({
+      title: `Delete "${p.title}"?`,
+      description: "The post will be removed from the website permanently. This can't be undone.",
+      confirmLabel: "Delete post",
+    });
+    if (!ok) return false;
     try {
       await api.blogs.remove(p.id);
       toast.success("Post deleted");
@@ -287,7 +294,20 @@ const BlogManager = ({ routeId, navigate, onDirtyChange }: SectionProps) => {
 
   async function bulk(action: string, ids: string[]) {
     const targets = posts.filter((p) => ids.includes(p.id));
-    if (action === "delete" && !window.confirm(`Delete ${targets.length} post(s)? This can't be undone.`)) return;
+    if (
+      action === "delete" &&
+      !(await confirm({
+        title: `Delete ${targets.length} post${targets.length === 1 ? "" : "s"}?`,
+        description: (
+          <>
+            {targets.slice(0, 5).map((t) => t.title).join(", ")}
+            {targets.length > 5 ? ` and ${targets.length - 5} more` : ""}. They will be removed from the website permanently. This can't be undone.
+          </>
+        ),
+        confirmLabel: `Delete ${targets.length}`,
+      }))
+    )
+      return;
     let done = 0;
     for (const p of targets) {
       try {
@@ -449,7 +469,11 @@ const BlogManager = ({ routeId, navigate, onDirtyChange }: SectionProps) => {
                 draft.id
                   ? () =>
                       void removePost({ id: draft.id as string, title: draft.title }).then((ok) => {
-                        if (ok) navigate("/blogs");
+                        if (ok) {
+                          // The item is gone, so its unsaved edits are moot — don't warn.
+                          onDirtyChange(false);
+                          navigate("/blogs");
+                        }
                       })
                   : undefined
               }
