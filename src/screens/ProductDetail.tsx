@@ -77,7 +77,7 @@ const ProductDetailPage = ({
       <Navbar />
 
       <header className="gradient-navy pt-28 pb-10">
-        <div className="container-max px-4 md:px-8 lg:px-16">
+        <div className="container-max">
           <div className="max-w-5xl">
             <nav aria-label="Breadcrumb" className="mb-4 flex flex-wrap items-center gap-2 text-sm text-primary-foreground/70">
               <Link href="/" className="transition-colors hover:text-accent">

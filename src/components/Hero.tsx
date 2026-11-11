@@ -69,7 +69,7 @@ const Hero = ({
     <div className="gradient-overlay absolute inset-0" />
 
     <div className="relative z-10 flex min-h-[100svh] items-start pt-28 pb-16 md:pt-32 md:pb-20">
-      <div className="container-max px-4 md:px-8 lg:px-16">
+      <div className="container-max">
         <motion.div
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}

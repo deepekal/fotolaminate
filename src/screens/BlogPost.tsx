@@ -109,7 +109,7 @@ const BlogPostPage = ({ initialPost = null }: { initialPost?: BlogPostRecord | n
       ))}
 
       <header className="gradient-navy pt-28 pb-10">
-        <div className="container-max px-4 md:px-8 lg:px-16">
+        <div className="container-max">
           <div className="max-w-4xl">
             <Link href="/blogs" className="mb-6 inline-flex items-center gap-2 text-sm text-primary-foreground/70 hover:text-accent">
               <ChevronLeft size={16} />

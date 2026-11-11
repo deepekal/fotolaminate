@@ -56,7 +56,7 @@ const GrowingCompany = ({
         </svg>
       </div>
 
-      <div className="container-max relative z-10 px-4">
+      <div className="container-max relative z-10">
         <div className="mb-16 text-center">
           <h2 className="font-display text-4xl font-bold tracking-tight text-foreground md:text-5xl lg:text-6xl">
             {title.split(" ").map((word, index) => (

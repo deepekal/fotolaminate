@@ -36,7 +36,7 @@ const Navbar = () => {
         scrolled ? "bg-primary/95 backdrop-blur-md shadow-lg" : "bg-transparent"
       }`}
     >
-      <div className="hidden w-full border-b border-primary-foreground/10 bg-primary/80 px-4 py-1 text-xs text-primary-foreground/80 backdrop-blur-sm lg:block">
+      <div className="hidden w-full border-b border-primary-foreground/10 bg-primary/80 py-1 text-xs text-primary-foreground/80 backdrop-blur-sm lg:block">
         <div className="container-max flex items-center justify-between">
           <div>
             GST No: 07ACJPV6163A1ZJ &nbsp;|&nbsp;
@@ -63,16 +63,15 @@ const Navbar = () => {
           </div>
         </div>
       </div>
-      <div className="container-max flex items-center justify-between px-4 py-2 md:px-8">
-        {/* Logo artwork has navy elements and a white ground, so it sits on a white badge over the dark header. */}
-        <Link href="/" aria-label="Foto Laminate — home" className="shrink-0 rounded-md bg-white px-2 py-1 shadow-sm">
+      <div className="container-max flex items-center justify-between py-2">
+        <Link href="/" aria-label="Foto Laminate — home" className="shrink-0">
           <img
-            src="/logo-320.webp"
-            srcSet="/logo-320.webp 1x, /logo-640.webp 2x"
+            src="/logo-360.webp"
+            srcSet="/logo-360.webp 1x, /logo-720.webp 2x"
             alt="Foto Laminate"
-            width={105}
-            height={40}
-            className="h-9 w-auto sm:h-10"
+            width={143}
+            height={48}
+            className="h-11 w-auto drop-shadow-[0_0_1px_rgba(255,255,255,0.95)] sm:h-12"
           />
         </Link>
 

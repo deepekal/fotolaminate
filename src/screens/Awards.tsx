@@ -168,7 +168,7 @@ export default function AwardsPage() {
       <Navbar />
 
       <header className="gradient-navy pt-28 pb-16">
-        <div className="container-max px-4 md:px-8 lg:px-16">
+        <div className="container-max">
           <div className="max-w-3xl">
             <span className="mb-3 inline-block rounded-full border border-accent/40 bg-accent/10 px-4 py-1 font-display text-sm font-semibold tracking-wider text-accent">
               Awards

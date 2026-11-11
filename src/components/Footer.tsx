@@ -8,14 +8,14 @@ const Footer = () => (
     <div className="container-max">
       <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
         <div>
-          <Link href="/" aria-label="Foto Laminate — home" className="mb-4 inline-block rounded-lg bg-white px-3 py-2">
+          <Link href="/" aria-label="Foto Laminate — home" className="mb-4 inline-block">
             <img
-              src="/logo-320.webp"
-              srcSet="/logo-320.webp 1x, /logo-640.webp 2x"
+              src="/logo-360.webp"
+              srcSet="/logo-360.webp 1x, /logo-720.webp 2x"
               alt="Foto Laminate"
-              width={168}
-              height={64}
-              className="h-16 w-auto"
+              width={215}
+              height={72}
+              className="h-[72px] w-auto drop-shadow-[0_0_1px_rgba(255,255,255,0.95)]"
               loading="lazy"
             />
           </Link>

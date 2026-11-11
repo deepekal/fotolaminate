@@ -172,7 +172,7 @@ const ProductsPage = ({ initialProducts = [] }: ProductsPageProps) => {
       <Navbar />
 
     <header className="gradient-navy pt-28 pb-12">
-      <div className="container-max px-4 md:px-8 lg:px-16">
+      <div className="container-max">
         <div className="max-w-3xl">
           <span className="mb-3 inline-block rounded-full border border-accent/40 bg-accent/10 px-4 py-1 font-display text-sm font-semibold tracking-wider text-accent">
             Products
@@ -192,7 +192,7 @@ const ProductsPage = ({ initialProducts = [] }: ProductsPageProps) => {
 
     <main>
       <div className="sticky top-[60px] z-30 sm:top-[64px] border-b border-border bg-white/95 shadow-sm backdrop-blur lg:top-[89px]">
-        <div className="container-max flex flex-col gap-3 px-4 py-3 md:px-8 lg:flex-row lg:items-center">
+        <div className="container-max flex flex-col gap-3 py-3 lg:flex-row lg:items-center">
           <div className="relative lg:w-52 lg:shrink-0">
             <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <input
@@ -232,7 +232,7 @@ const ProductsPage = ({ initialProducts = [] }: ProductsPageProps) => {
       </div>
 
       <section ref={resultsRef} className="scroll-mt-[188px] bg-muted py-12 sm:scroll-mt-[192px] lg:scroll-mt-[216px]">
-        <div className="container-max px-4 md:px-8">
+        <div className="container-max">
           {loading ? (
             <div className="rounded-lg border border-border bg-white p-6 text-sm text-muted-foreground shadow-industrial">
               Loading…

@@ -63,7 +63,7 @@ const StaticPage = ({ page }: { page: PageContent | null }) => {
     <>
       <Navbar />
       <header className="gradient-navy pt-28 pb-16">
-        <div className="container-max px-4 md:px-8 lg:px-16">
+        <div className="container-max">
           <div className="max-w-4xl">
             {heroSection?.title ? (
               <span className="mb-3 inline-block rounded-full border border-accent/40 bg-accent/10 px-4 py-1 font-display text-sm font-semibold tracking-wider text-accent">
@@ -80,7 +80,7 @@ const StaticPage = ({ page }: { page: PageContent | null }) => {
           if (section.type === "faq" && section.faqs) {
             return (
               <section key={section.id} className="section-padding bg-white">
-                <div className="container-max px-4 md:px-8 lg:px-16">
+                <div className="container-max">
                   <div className="max-w-4xl">
                     {section.title ? (
                       <span className="mb-6 inline-block font-display text-sm font-semibold uppercase tracking-widest text-accent">
@@ -96,7 +96,7 @@ const StaticPage = ({ page }: { page: PageContent | null }) => {
 
           return (
             <section key={section.id} className="section-padding bg-white">
-              <div className="container-max px-4 md:px-8 lg:px-16">
+              <div className="container-max">
                 <div className="max-w-4xl">
                   {section.title ? (
                     <span className="mb-3 inline-block font-display text-sm font-semibold uppercase tracking-widest text-accent">

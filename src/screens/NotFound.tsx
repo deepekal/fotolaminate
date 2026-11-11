@@ -17,7 +17,7 @@ const NotFound = () => {
     <>
       <Navbar />
       <div className="section-padding flex min-h-screen items-center justify-center bg-muted pt-28">
-        <div className="container-max px-4 md:px-8 lg:px-16">
+        <div className="container-max">
           <div className="mx-auto max-w-xl rounded-lg border border-border bg-card p-8 text-center shadow-industrial">
             <h1 className="mb-3 font-display text-5xl font-bold text-foreground">404</h1>
             <p className="mb-6 text-sm leading-relaxed text-muted-foreground">

@@ -67,11 +67,20 @@
 }
 
 @layer utilities {
+  /* Vertical rhythm only — horizontal spacing belongs to .container-max. */
   .section-padding {
-    @apply px-4 py-16 md:px-8 md:py-24 lg:px-16;
+    @apply py-16 md:py-24;
   }
+  /* The single source of left/right alignment for the whole site: a centred
+     column with a fluid gutter (16px on phones, growing to 40px on desktop). */
   .container-max {
-    @apply max-w-7xl mx-auto;
+    @apply mx-auto w-full;
+    max-width: 84rem;
+    padding-inline: clamp(1rem, 4vw, 2.5rem);
+  }
+  /* Reusable sections (e.g. FAQ) placed inside a page column must not add a second gutter. */
+  .container-max .container-max {
+    padding-inline: 0;
   }
   .gradient-overlay {
     background: linear-gradient(90deg, hsl(213 60% 18% / 0.92) 0%, hsl(213 60% 18% / 0.6) 50%, transparent 100%);

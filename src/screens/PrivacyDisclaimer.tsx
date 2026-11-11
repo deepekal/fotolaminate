@@ -8,7 +8,7 @@ const PrivacyDisclaimerPage = () => (
     <Navbar />
 
     <header className="gradient-navy pt-28 pb-16">
-      <div className="container-max px-4 md:px-8 lg:px-16">
+      <div className="container-max">
         <div className="max-w-3xl">
           <span className="mb-3 inline-block rounded-full border border-accent/40 bg-accent/10 px-4 py-1 font-display text-sm font-semibold tracking-wider text-accent">
             Legal
@@ -24,7 +24,7 @@ const PrivacyDisclaimerPage = () => (
     </header>
 
     <main className="section-padding bg-white">
-      <div className="container-max px-4 md:px-8">
+      <div className="container-max">
         <div className="grid gap-12 lg:grid-cols-2">
           <section>
             <h2 className="mb-6 font-display text-2xl font-bold text-foreground">Privacy Policy</h2>
