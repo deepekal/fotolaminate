@@ -3,25 +3,32 @@
 import BlogManager from "@/components/dashboard/BlogManager";
 import PageManager from "@/components/dashboard/PageManager";
 import ProductManager from "@/components/dashboard/ProductManager";
+import MediaLibrary from "@/components/dashboard/MediaLibrary";
+import Overview from "@/components/dashboard/Overview";
 import { btnPrimary, inputCls } from "@/components/dashboard/admin-ui";
-import { Eye, EyeOff, ExternalLink, FileText, LayoutTemplate, Loader2, LogOut, Menu, Package, X } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { Eye, EyeOff, ExternalLink, FileText, Images, LayoutDashboard, LayoutTemplate, Loader2, LogOut, Menu, Package, X } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "@/lib/api";
 
 const ADMIN_TOKEN_STORAGE_KEY = "admin_token";
 
 const sections = [
-  { id: "products", label: "Products", icon: Package, description: "Machines and accessories" },
-  { id: "blogs", label: "Blog posts", icon: FileText, description: "Machine guides and news" },
-  { id: "pages", label: "Pages", icon: LayoutTemplate, description: "Site page text and SEO" },
+  { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { id: "products", label: "Products", icon: Package },
+  { id: "blogs", label: "Blog posts", icon: FileText },
+  { id: "pages", label: "Pages", icon: LayoutTemplate },
+  { id: "media", label: "Media library", icon: Images },
 ] as const;
 
 type SectionId = (typeof sections)[number]["id"];
+type Route = { section: SectionId; id?: string };
 
-function readSectionFromHash(): SectionId {
-  if (typeof window === "undefined") return "products";
-  const h = window.location.hash.replace("#", "");
-  return (sections.find((s) => s.id === h)?.id ?? "products") as SectionId;
+/** Hash routes: #/products, #/products/<id>, #/products/new, #/blogs/…, #/pages/…, #/media */
+function parseRoute(): Route {
+  if (typeof window === "undefined") return { section: "dashboard" };
+  const [, section, id] = window.location.hash.replace(/^#/, "").split("/");
+  const found = sections.find((s) => s.id === section);
+  return found ? { section: found.id, id: id ? decodeURIComponent(id) : undefined } : { section: "dashboard" };
 }
 
 const Logo = ({ className = "" }: { className?: string }) => (
@@ -36,8 +43,15 @@ const DashboardPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loggingIn, setLoggingIn] = useState(false);
   const [loginError, setLoginError] = useState<string>("");
-  const [section, setSection] = useState<SectionId>("products");
+  const [route, setRoute] = useState<Route>({ section: "dashboard" });
   const [navOpen, setNavOpen] = useState(false);
+
+  // Unsaved-changes guard shared by all editors.
+  const dirtyRef = useRef(false);
+  const currentHash = useRef("");
+  const onDirtyChange = useCallback((d: boolean) => {
+    dirtyRef.current = d;
+  }, []);
 
   useEffect(() => {
     try {
@@ -45,9 +59,20 @@ const DashboardPage = () => {
     } catch {
       setStoredToken("");
     }
-    setSection(readSectionFromHash());
+    setRoute(parseRoute());
+    currentHash.current = window.location.hash;
     setReady(true);
-    const onHash = () => setSection(readSectionFromHash());
+    const onHash = () => {
+      if (window.location.hash === currentHash.current) return;
+      if (dirtyRef.current && !window.confirm("You have unsaved changes. Leave without saving?")) {
+        window.location.hash = currentHash.current; // undo the navigation (e.g. browser Back)
+        return;
+      }
+      dirtyRef.current = false;
+      currentHash.current = window.location.hash;
+      setRoute(parseRoute());
+      window.scrollTo(0, 0);
+    };
     window.addEventListener("hashchange", onHash);
     return () => window.removeEventListener("hashchange", onHash);
   }, []);
@@ -82,6 +107,8 @@ const DashboardPage = () => {
   }
 
   function clearToken() {
+    if (dirtyRef.current && !window.confirm("You have unsaved changes. Log out anyway?")) return;
+    dirtyRef.current = false;
     setAdminPassword("");
     setLoginError("");
     try {
@@ -92,11 +119,17 @@ const DashboardPage = () => {
     setStoredToken("");
   }
 
-  function go(id: SectionId) {
-    window.location.hash = id;
-    setSection(id);
+  const navigate = useCallback((path: string) => {
     setNavOpen(false);
-  }
+    const hash = `#${path}`;
+    if (hash === window.location.hash) return;
+    if (dirtyRef.current && !window.confirm("You have unsaved changes. Leave without saving?")) return;
+    dirtyRef.current = false;
+    currentHash.current = hash;
+    window.location.hash = path;
+    setRoute(parseRoute());
+    window.scrollTo(0, 0);
+  }, []);
 
   if (!ready) return <div className="min-h-screen bg-slate-100" />;
 
@@ -165,53 +198,52 @@ const DashboardPage = () => {
   }
 
   /* ------------------------------------------------------------ app */
-  const current = sections.find((s) => s.id === section) ?? sections[0];
-
   const nav = (
     <nav aria-label="Admin" className="flex h-full flex-col">
       <div className="flex h-16 items-center px-5">
         <Logo className="h-7 w-auto" />
       </div>
-      <p className="px-5 pb-2 pt-4 text-xs font-medium text-primary-foreground/45">Content</p>
-      <ul className="space-y-1 px-3">
+      <ul className="mt-2 space-y-0.5 px-3">
         {sections.map(({ id, label, icon: Icon }) => {
-          const active = id === section;
+          const active = id === route.section;
           return (
             <li key={id}>
               <button
                 type="button"
-                onClick={() => go(id)}
+                onClick={() => navigate(id === "dashboard" ? "/" : `/${id}`)}
                 aria-current={active ? "page" : undefined}
-                className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition ${
-                  active ? "bg-white/10 text-primary-foreground" : "text-primary-foreground/70 hover:bg-white/5 hover:text-primary-foreground"
+                className={`flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition ${
+                  active ? "bg-accent text-accent-foreground" : "text-primary-foreground/75 hover:bg-white/10 hover:text-primary-foreground"
                 }`}
               >
-                <Icon size={18} className={active ? "text-accent" : ""} aria-hidden="true" />
+                <Icon size={18} aria-hidden="true" />
                 {label}
               </button>
             </li>
           );
         })}
       </ul>
-      <div className="mt-auto space-y-1 border-t border-white/10 p-3">
+      <div className="mt-auto space-y-0.5 border-t border-white/10 p-3">
         <a
           href="/"
           target="_blank"
           rel="noreferrer"
-          className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-primary-foreground/70 transition hover:bg-white/5 hover:text-primary-foreground"
+          className="flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium text-primary-foreground/75 transition hover:bg-white/10 hover:text-primary-foreground"
         >
           <ExternalLink size={18} aria-hidden="true" /> View website
         </a>
         <button
           type="button"
           onClick={clearToken}
-          className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-primary-foreground/70 transition hover:bg-white/5 hover:text-primary-foreground"
+          className="flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium text-primary-foreground/75 transition hover:bg-white/10 hover:text-primary-foreground"
         >
           <LogOut size={18} aria-hidden="true" /> Log out
         </button>
       </div>
     </nav>
   );
+
+  const sectionProps = { routeId: route.id, navigate, onDirtyChange };
 
   return (
     <div className="min-h-screen bg-slate-100">
@@ -227,21 +259,19 @@ const DashboardPage = () => {
       ) : null}
 
       <div className="lg:pl-60">
-        <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-slate-200 bg-white px-4 lg:px-8">
-          <button type="button" onClick={() => setNavOpen(true)} className="rounded-lg p-2 text-slate-600 hover:bg-slate-100 lg:hidden" aria-label="Open menu">
+        <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-slate-200 bg-white px-4 lg:hidden">
+          <button type="button" onClick={() => setNavOpen(true)} className="rounded-md p-2 text-slate-600 hover:bg-slate-100" aria-label="Open menu">
             {navOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
-          <div className="min-w-0">
-            <h1 className="font-display text-lg font-bold leading-tight text-slate-900">{current.label}</h1>
-            <p className="truncate text-xs text-slate-500">{current.description}</p>
-          </div>
-          <span className="ml-auto hidden text-xs text-slate-400 sm:block">Tip: press Ctrl/Cmd + S to save</span>
+          <span className="font-display text-lg font-bold text-slate-900">{sections.find((s) => s.id === route.section)?.label}</span>
         </header>
 
-        <main>
-          {section === "products" ? <ProductManager /> : null}
-          {section === "blogs" ? <BlogManager /> : null}
-          {section === "pages" ? <PageManager /> : null}
+        <main className="min-h-screen">
+          {route.section === "dashboard" ? <Overview navigate={navigate} /> : null}
+          {route.section === "products" ? <ProductManager key={`p-${route.id ?? "list"}`} {...sectionProps} /> : null}
+          {route.section === "blogs" ? <BlogManager key={`b-${route.id ?? "list"}`} {...sectionProps} /> : null}
+          {route.section === "pages" ? <PageManager key={`g-${route.id ?? "list"}`} {...sectionProps} /> : null}
+          {route.section === "media" ? <MediaLibrary /> : null}
         </main>
       </div>
     </div>

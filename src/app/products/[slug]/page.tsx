@@ -1,4 +1,5 @@
 import ProductDetailPage from "@/screens/ProductDetail";
+import { stripHtml } from "@/lib/rich-text";
 
 import type { Metadata } from "next";
 import { query } from "@server/lib/db";
@@ -36,7 +37,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
     const title = p.meta_title?.trim() || p.name;
     const description =
-      (p.meta_description?.trim() || p.summary?.trim() || p.description?.trim() || `Explore ${p.name} by Foto Laminate Precision.`).slice(0, 160);
+      (p.meta_description?.trim() || p.summary?.trim() || stripHtml(p.description) || `Explore ${p.name} by Foto Laminate Precision.`).slice(0, 160);
     const CANONICAL_BASE = "https://www.fotolaminate.com";
     const raw = p.og_image_url || p.cover_image_url || null;
     const image = raw && /^https?:\/\//i.test(raw) ? raw : raw ? `${CANONICAL_BASE}${raw.startsWith("/") ? "" : "/"}${raw}` : null;
@@ -108,7 +109,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
 
       // Prefer the short summary for schema description; fall back to a
       // truncated version of the full description to keep it concise.
-      const rawDesc = (p.summary?.trim() || p.description?.trim() || p.name).slice(0, 300);
+      const rawDesc = (p.summary?.trim() || stripHtml(p.description) || p.name).slice(0, 300);
 
       const productUrl = `${CANONICAL_BASE}/products/${slug}`;
 

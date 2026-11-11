@@ -28,6 +28,7 @@ const WHATSAPP_PHONE = "919873684816";
 const CALL_PHONE_E164 = "+919873684816";
 
 import { slugifyCategory } from "@/lib/slug";
+import { isHtml } from "@/lib/rich-text";
 
 type ProductDetailPageProps = {
   initialProduct?: ProductRecord | null;
@@ -168,9 +169,17 @@ const ProductDetailPage = ({
                 <div className="min-w-0 lg:col-span-7">
                   <div className="rounded-lg border border-border bg-white p-6 shadow-industrial md:p-8">
                     <h2 className="mb-3 font-display text-2xl font-bold text-foreground">Product Description</h2>
-                    <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-muted-foreground text-justify">
-                      {product.description || product.summary || "This high-performance machine is engineered for precision and industrial durability, ensuring consistent results for professional media finishing."}
-                    </p>
+                    {isHtml(product.description) ? (
+                      // Saved from the admin's rich-text editor.
+                      <div
+                        className="prose prose-sm max-w-none break-words text-muted-foreground prose-headings:font-display prose-headings:text-foreground prose-a:text-accent prose-strong:text-foreground"
+                        dangerouslySetInnerHTML={{ __html: product.description }}
+                      />
+                    ) : (
+                      <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-muted-foreground text-justify">
+                        {product.description || product.summary || "This high-performance machine is engineered for precision and industrial durability, ensuring consistent results for professional media finishing."}
+                      </p>
+                    )}
 
                     {(product.features?.length > 0 || specsEntries.length > 0) && (
                       <div className="mt-8 space-y-8">

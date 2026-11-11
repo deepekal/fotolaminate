@@ -5,27 +5,26 @@ import { api } from "@/lib/api";
 import { toast } from "sonner";
 import type { PageContent, PageField, PageFAQ, PageSection, PageFieldKey } from "@/lib/page-types";
 import {
-  Card,
-  EditorBody,
-  EditorHeader,
-  EmptyEditor,
+  AdminTable,
+  Breadcrumb,
+  EditorLayout,
   FaqField,
   Field,
-  ImageField,
+  ImageBox,
   JsonListEditor,
-  ListPane,
-  ListRow,
-  ManagerLayout,
+  PageTitle,
+  Panel,
+  PublishBox,
   SeoPreview,
+  TitleCell,
   btnGhost,
   btnSecondary,
-  confirmDiscard,
   inputCls,
   textareaCls,
   useSaveShortcut,
   useUnloadWarning,
 } from "@/components/dashboard/admin-ui";
-import { Plus, RefreshCw, X } from "lucide-react";
+import { Loader2, Plus, RefreshCw, X } from "lucide-react";
 
 type DraftSection = Omit<PageSection, 'faqs'> & {
   faqs?: string[];
@@ -67,9 +66,15 @@ function toDraft(page: PageContent): PageDraft {
   };
 }
 
-const PageManager = () => {
+type SectionProps = {
+  routeId?: string;
+  navigate: (hash: string) => void;
+  onDirtyChange: (dirty: boolean) => void;
+};
+
+const PageManager = ({ routeId, navigate, onDirtyChange }: SectionProps) => {
   const [pages, setPages] = useState<PageContent[]>([]);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const selectedId = routeId ?? null;
   const [draft, setDraft] = useState<PageDraft | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -83,30 +88,21 @@ const PageManager = () => {
   const baseline = useMemo(() => (selectedPage ? toDraft(selectedPage) : null), [selectedPage]);
   const dirty = Boolean(draft && baseline && JSON.stringify(draft) !== JSON.stringify(baseline));
   useUnloadWarning(dirty);
+  useEffect(() => onDirtyChange(dirty), [dirty, onDirtyChange]);
 
-  const filtered = useMemo(() => {
+  const rows = useMemo(() => {
     const q = search.toLowerCase();
-    return pages.filter((page) => page.name.toLowerCase().includes(q) || page.pageId.toLowerCase().includes(q) || page.path.toLowerCase().includes(q));
+    return pages
+      .filter((page) => page.name.toLowerCase().includes(q) || page.pageId.toLowerCase().includes(q) || page.path.toLowerCase().includes(q))
+      .map((page) => ({ ...page, id: page.pageId }));
   }, [pages, search]);
-
-  function openPage(id: string) {
-    if (id === selectedId) return;
-    if (!confirmDiscard(dirty)) return;
-    setSelectedId(id);
-  }
-
-  function backToList() {
-    if (!confirmDiscard(dirty)) return;
-    setSelectedId(null);
-    setDraft(null);
-  }
 
   useEffect(() => {
     void refresh();
   }, []);
 
   useEffect(() => {
-    if (selectedPage) setDraft(toDraft(selectedPage));
+    setDraft(selectedPage ? toDraft(selectedPage) : null);
   }, [selectedPage]);
 
   async function refresh() {
@@ -143,16 +139,6 @@ const PageManager = () => {
 
 
 
-  async function uploadImage(sectionId: string, fieldIndex: number, file: File) {
-    if (!file) return;
-    try {
-      const { url } = await api.uploads.imgbb(file);
-      updateSectionField(sectionId, fieldIndex, url);
-      toast.success("Image uploaded");
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed to upload image");
-    }
-  }
 
   async function save() {
     if (!draft) return;
@@ -305,9 +291,14 @@ const PageManager = () => {
 
     if (field.key === "image") {
       return (
-        <div className="relative">
-          <div className="absolute right-0 top-0">{removeBtn}</div>
-          <ImageField label={fieldLabel(field)} value={value} onChange={(v) => updateSectionField(sectionId, index, v)} onUpload={(f) => void uploadImage(sectionId, index, f)} />
+        <div>
+          <div className="mb-1.5 flex items-center justify-between gap-2">
+            <span className="text-sm font-medium text-slate-700">{fieldLabel(field)}</span>
+            {removeBtn}
+          </div>
+          <div className="max-w-sm">
+            <ImageBox value={value} onChange={(v) => updateSectionField(sectionId, index, v)} />
+          </div>
         </div>
       );
     }
@@ -330,104 +321,144 @@ const PageManager = () => {
     );
   }
 
-  const list = (
-    <ListPane
-      title="Pages"
-      count={filtered.length}
-      search={search}
-      onSearch={setSearch}
-      extraAction={
-        <button type="button" onClick={() => void refresh()} className={btnSecondary} aria-label="Reload pages">
-          <RefreshCw size={15} aria-hidden="true" />
-        </button>
-      }
-      loading={loading}
-      emptyText={pages.length === 0 ? "No pages configured." : "No pages match your search."}
-    >
-      {filtered.map((page) => (
-        <ListRow key={page.pageId} active={page.pageId === selectedId} onClick={() => openPage(page.pageId)} title={page.name} meta={page.path} />
-      ))}
-    </ListPane>
-  );
+  /* ---------------------------------------------------------------- table */
+  if (!routeId) {
+    return (
+      <>
+        <PageTitle
+          title="Pages"
+          actions={
+            <button type="button" onClick={() => void refresh()} className={btnSecondary}>
+              <RefreshCw size={15} aria-hidden="true" /> Reload
+            </button>
+          }
+        >
+          <p className="text-sm text-slate-500">Text, images, SEO and FAQs for each page of the website.</p>
+        </PageTitle>
+        <AdminTable
+          rows={rows}
+          loading={loading}
+          columns={[{ label: "Page" }, { label: "Address", className: "w-56" }, { label: "Sections", className: "w-28" }, { label: "FAQs", className: "w-24" }]}
+          emptyText={pages.length === 0 ? "No pages configured." : "No pages match your search."}
+          search={search}
+          onSearch={setSearch}
+          searchPlaceholder="Search pages"
+          renderRow={(page) => (
+            <>
+              <TitleCell title={page.name} onEdit={() => navigate(`/pages/${page.pageId}`)} viewHref={page.path} />
+              <td className="py-2.5 pr-4 font-mono text-xs text-slate-500">{page.path}</td>
+              <td className="py-2.5 pr-4 text-slate-600">{page.sections.length}</td>
+              <td className="py-2.5 pr-4 text-slate-600">{(page.faqs?.length ?? 0) + page.sections.reduce((n, sec) => n + (sec.faqs?.length ?? 0), 0)}</td>
+            </>
+          )}
+        />
+      </>
+    );
+  }
 
-  const editor = !draft ? (
-    <EmptyEditor title="Select a page" text="Choose a page from the list to edit its text, images, SEO and FAQs." />
-  ) : (
-    <div>
-      <EditorHeader
-        kicker={`Edit page · ${draft.path}`}
-        title={draft.name}
-        dirty={dirty}
-        viewHref={draft.path}
-        onSave={() => void save()}
-        saving={saving}
-        saveLabel="Save page"
-        onBack={backToList}
-      />
-      <EditorBody>
-        {draft.sections.map((section) => (
-          <Card
-            key={section.id}
-            title={section.title}
-            description={section.type === "faq" ? "Questions and answers" : undefined}
-            actions={
-              section.type === "faq" ? undefined : (
-                <button type="button" onClick={() => addSectionField(section.id, "image")} className={btnSecondary}>
-                  <Plus size={15} aria-hidden="true" /> Add image
-                </button>
-              )
-            }
-          >
-            {section.type === "faq" ? (
-              <FaqField
-                faqs={section.faqs ?? []}
-                onChange={(faqs) =>
-                  updateDraft((current) => ({
-                    ...current,
-                    sections: current.sections.map((sec) => (sec.id === section.id ? { ...sec, faqs } : sec)),
-                  }))
+  /* --------------------------------------------------------------- editor */
+  if (!draft) {
+    return (
+      <div className="p-10 text-center text-sm text-slate-500">
+        {loading ? (
+          <>
+            <Loader2 size={18} className="mr-2 inline animate-spin" aria-hidden="true" /> Loading…
+          </>
+        ) : (
+          <>
+            This page doesn't exist.{" "}
+            <button type="button" onClick={() => navigate("/pages")} className="font-semibold text-accent hover:underline">
+              Back to pages
+            </button>
+          </>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <Breadcrumb backLabel="Pages" onBack={() => navigate("/pages")} current={draft.name} dirty={dirty} />
+      <EditorLayout
+        main={
+          <>
+            {draft.sections.map((section) => (
+              <Panel
+                key={section.id}
+                title={section.title}
+                actions={
+                  section.type === "faq" ? undefined : (
+                    <button type="button" onClick={() => addSectionField(section.id, "image")} className="text-xs font-semibold text-accent hover:underline">
+                      + Add image
+                    </button>
+                  )
                 }
-                label="Questions"
+              >
+                {section.type === "faq" ? (
+                  <FaqField
+                    faqs={section.faqs ?? []}
+                    onChange={(faqs) =>
+                      updateDraft((current) => ({
+                        ...current,
+                        sections: current.sections.map((sec) => (sec.id === section.id ? { ...sec, faqs } : sec)),
+                      }))
+                    }
+                    label="Questions"
+                  />
+                ) : section.fields && section.fields.length > 0 ? (
+                  section.fields.map((field, index) => <div key={`${section.id}-${index}`}>{renderFieldInput(section.id, field, index)}</div>)
+                ) : (
+                  <p className="text-sm text-slate-500">This section has no editable fields.</p>
+                )}
+              </Panel>
+            ))}
+
+            <Panel title="SEO">
+              <SeoPreview title={draft.seo.title} description={draft.seo.description} path={draft.path} />
+              <Field label="SEO title" counter={{ value: draft.seo.title.trim().length, ideal: [50, 60] }}>
+                <input type="text" value={draft.seo.title} onChange={(e) => updateDraft((current) => ({ ...current, seo: { ...current.seo, title: e.target.value } }))} className={inputCls} />
+              </Field>
+              <Field label="SEO description" counter={{ value: draft.seo.description.trim().length, ideal: [140, 160] }}>
+                <textarea rows={3} value={draft.seo.description} onChange={(e) => updateDraft((current) => ({ ...current, seo: { ...current.seo, description: e.target.value } }))} className={textareaCls} />
+              </Field>
+              <Field label="Keywords" hint="Separate with commas.">
+                <input type="text" value={draft.keywordString} onChange={(e) => updateDraft((current) => ({ ...current, keywordString: e.target.value }))} className={inputCls} />
+              </Field>
+            </Panel>
+
+            <Panel title="Page FAQs">
+              <FaqField faqs={draft.faqs} onChange={(faqs) => updateDraft((c) => ({ ...c, faqs }))} label="Page-level questions" />
+            </Panel>
+
+            <Panel title="Structured data (advanced)">
+              <JsonListEditor
+                items={draft.schemas}
+                onChange={(schemas) => updateDraft((c) => ({ ...c, schemas }))}
+                addLabel="Add schema"
+                emptyText="No structured data added."
+                placeholder="Paste JSON or a JSON-LD <script> block"
               />
-            ) : section.fields && section.fields.length > 0 ? (
-              section.fields.map((field, index) => <div key={`${section.id}-${index}`}>{renderFieldInput(section.id, field, index)}</div>)
-            ) : (
-              <p className="text-sm text-slate-500">This section has no editable fields.</p>
-            )}
-          </Card>
-        ))}
-
-        <Card title="Search engine (SEO)" description="How this page appears in Google results.">
-          <SeoPreview title={draft.seo.title} description={draft.seo.description} path={draft.path} />
-          <Field label="SEO title" counter={{ value: draft.seo.title.trim().length, ideal: [50, 60] }}>
-            <input type="text" value={draft.seo.title} onChange={(e) => updateDraft((current) => ({ ...current, seo: { ...current.seo, title: e.target.value } }))} className={inputCls} />
-          </Field>
-          <Field label="SEO description" counter={{ value: draft.seo.description.trim().length, ideal: [140, 160] }}>
-            <textarea rows={3} value={draft.seo.description} onChange={(e) => updateDraft((current) => ({ ...current, seo: { ...current.seo, description: e.target.value } }))} className={textareaCls} />
-          </Field>
-          <Field label="Keywords" hint="Separate with commas.">
-            <input type="text" value={draft.keywordString} onChange={(e) => updateDraft((current) => ({ ...current, keywordString: e.target.value }))} className={inputCls} />
-          </Field>
-        </Card>
-
-        <Card title="Page FAQs" description="Page-level questions and answers.">
-          <FaqField faqs={draft.faqs} onChange={(faqs) => updateDraft((c) => ({ ...c, faqs }))} label="Questions" />
-        </Card>
-
-        <Card title="Advanced" description="Structured data (JSON-LD) for search engines.">
-          <JsonListEditor
-            items={draft.schemas}
-            onChange={(schemas) => updateDraft((c) => ({ ...c, schemas }))}
-            addLabel="Add schema"
-            emptyText="No structured data added."
-            placeholder="Paste JSON or a JSON-LD <script> block"
-          />
-        </Card>
-      </EditorBody>
-    </div>
+            </Panel>
+          </>
+        }
+        sidebar={
+          <>
+            <PublishBox isNew={false} viewHref={draft.path} onSave={() => void save()} saving={saving} saveLabel="Update page" />
+            <section className="rounded-md border border-slate-200 bg-white p-4 text-sm shadow-sm">
+              <p className="font-semibold text-slate-900">On this page</p>
+              <ul className="mt-2 space-y-1 text-slate-600">
+                {draft.sections.map((sec) => (
+                  <li key={sec.id} className="truncate">
+                    {sec.title}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          </>
+        }
+      />
+    </>
   );
-
-  return <ManagerLayout list={list} editor={editor} showEditorOnMobile={Boolean(draft)} />;
 };
 
 export default PageManager;

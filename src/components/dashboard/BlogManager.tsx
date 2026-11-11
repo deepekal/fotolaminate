@@ -5,26 +5,30 @@ import { api, BlogPostRecord } from "@/lib/api";
 import { slugify } from "@/lib/slug";
 import { toast } from "sonner";
 import {
-  Card,
-  EditorBody,
-  EditorHeader,
-  EmptyEditor,
+  AdminTable,
+  Breadcrumb,
+  EditorLayout,
   FaqField,
   Field,
-  ImageField,
+  ImageBox,
   JsonListEditor,
-  ListPane,
-  ListRow,
-  ManagerLayout,
+  MetaBox,
+  PageTitle,
+  Panel,
+  PublishBox,
   SeoPreview,
+  StatusBadge,
+  TitleCell,
   btnPrimary,
-  confirmDiscard,
+  formatDate,
   inputCls,
   textareaCls,
   useSaveShortcut,
   useUnloadWarning,
 } from "@/components/dashboard/admin-ui";
-import { Plus } from "lucide-react";
+import RichTextEditor from "@/components/dashboard/RichTextEditor";
+import { stripHtml } from "@/lib/rich-text";
+import { Loader2, Plus } from "lucide-react";
 
 type BlogDraft = {
   id?: string;
@@ -99,32 +103,61 @@ function parseSchemaInput(input: string): unknown {
   return JSON.parse(trimmed);
 }
 
-const BlogManager = () => {
+/** Full record → API payload (the update endpoint replaces every field). */
+function recordToPayload(r: BlogPostRecord, overrides: Partial<BlogPostRecord> = {}) {
+  return {
+    title: r.title,
+    slug: r.slug,
+    meta_title: r.meta_title,
+    meta_description: r.meta_description,
+    tags: r.tags ?? [],
+    keywords: r.keywords ?? [],
+    schemas: Array.isArray(r.schemas) ? r.schemas : [],
+    cover_image_url: r.cover_image_url,
+    og_image_url: r.og_image_url,
+    content: r.content ?? "",
+    faqs: Array.isArray(r.faqs) ? r.faqs : [],
+    published: r.published,
+    ...overrides,
+  };
+}
+
+type SectionProps = {
+  routeId?: string;
+  navigate: (hash: string) => void;
+  onDirtyChange: (dirty: boolean) => void;
+};
+
+const BlogManager = ({ routeId, navigate, onDirtyChange }: SectionProps) => {
   const [loading, setLoading] = useState(true);
   const [posts, setPosts] = useState<BlogPostRecord[]>([]);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [draft, setDraft] = useState<BlogDraft>(() => emptyDraft());
-  const [uploadingCover, setUploadingCover] = useState(false);
-  const [uploadingOg, setUploadingOg] = useState(false);
-  const [search, setSearch] = useState("");
+  // The list endpoint returns an excerpt only; the editor loads the full post.
+  const [fullPost, setFullPost] = useState<BlogPostRecord | null>(null);
+  const [loadingPost, setLoadingPost] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [editing, setEditing] = useState(false);
+  const [search, setSearch] = useState("");
+  const [status, setStatus] = useState<"all" | "published" | "draft">("all");
 
-  const selectedPost = useMemo(
-    () => posts.find((p) => p.id === selectedId) ?? null,
-    [posts, selectedId],
+  const editing = routeId !== undefined;
+  const listItem = useMemo(() => (routeId && routeId !== "new" ? posts.find((p) => p.id === routeId) ?? null : null), [posts, routeId]);
+
+  const baseline = useMemo(() => (fullPost ? toDraft(fullPost) : emptyDraft()), [fullPost]);
+  const dirty = editing && !loadingPost && JSON.stringify(draft) !== JSON.stringify(baseline);
+  useUnloadWarning(dirty);
+  useEffect(() => onDirtyChange(dirty), [dirty, onDirtyChange]);
+
+  const counts = useMemo(
+    () => ({ all: posts.length, published: posts.filter((p) => p.published).length, draft: posts.filter((p) => !p.published).length }),
+    [posts],
   );
 
-  // The list endpoint returns an excerpt, not full content; load the full post when one is opened.
-  const [fullPost, setFullPost] = useState<BlogPostRecord | null>(null);
-  const baseline = useMemo(() => (fullPost ? toDraft(fullPost) : emptyDraft()), [fullPost]);
-  const dirty = editing && JSON.stringify(draft) !== JSON.stringify(baseline);
-  useUnloadWarning(dirty);
-
-  const filtered = useMemo(() => {
-    const q = search.toLowerCase();
-    return posts.filter((p) => p.title.toLowerCase().includes(q) || p.slug.toLowerCase().includes(q));
-  }, [posts, search]);
+  const rows = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return posts.filter(
+      (p) => (status === "all" || (status === "published") === p.published) && (!q || p.title.toLowerCase().includes(q) || p.slug.toLowerCase().includes(q)),
+    );
+  }, [posts, search, status]);
 
   async function refresh() {
     setLoading(true);
@@ -142,50 +175,33 @@ const BlogManager = () => {
     void refresh();
   }, []);
 
+  // Load the full post for the editor.
+  const listSlug = listItem?.slug;
   useEffect(() => {
-    if (!selectedPost) return;
+    if (routeId === "new") {
+      setFullPost(null);
+      setDraft(emptyDraft());
+      return;
+    }
+    if (!listSlug) return;
     let active = true;
-    // Show list data straight away, then replace with the full post (including content).
-    setDraft(toDraft(selectedPost));
+    setLoadingPost(true);
     api.blogs
-      .getBySlug(selectedPost.slug)
+      .getBySlug(listSlug)
       .then((p) => {
         if (!active) return;
         setFullPost(p);
         setDraft(toDraft(p));
       })
-      .catch(() => {
-        if (active) setFullPost(selectedPost);
-      });
+      .catch((e) => toast.error(e instanceof Error ? e.message : "Failed to load post"))
+      .finally(() => active && setLoadingPost(false));
     return () => {
       active = false;
     };
-  }, [selectedPost]);
+  }, [routeId, listSlug]);
 
   function update<K extends keyof BlogDraft>(key: K, value: BlogDraft[K]) {
     setDraft((d) => ({ ...d, [key]: value }));
-  }
-
-  function openPost(id: string) {
-    if (id === selectedId && editing) return;
-    if (!confirmDiscard(dirty)) return;
-    setFullPost(null);
-    setSelectedId(id);
-    setEditing(true);
-  }
-
-  function newPost() {
-    if (!confirmDiscard(dirty)) return;
-    setSelectedId(null);
-    setFullPost(null);
-    setDraft(emptyDraft());
-    setEditing(true);
-  }
-
-  function backToList() {
-    if (!confirmDiscard(dirty)) return;
-    if (fullPost) setDraft(toDraft(fullPost));
-    setEditing(false);
   }
 
   function onTitleChange(title: string) {
@@ -196,7 +212,7 @@ const BlogManager = () => {
   }
 
   async function save() {
-    if (saving) return;
+    if (saving || loadingPost) return;
     setSaving(true);
     try {
       const schemasParsed = draft.schemas
@@ -233,20 +249,20 @@ const BlogManager = () => {
       };
 
       if (!payload.title.trim()) throw new Error("Title is required");
-      if (!payload.slug.trim()) throw new Error("Slug is required");
+      if (!payload.slug.trim()) throw new Error("Web address is required");
 
       if (draft.id) {
         const saved = await api.blogs.update(draft.id, payload);
         setFullPost(saved);
-        toast.success("Post saved");
+        setDraft(toDraft(saved));
+        toast.success("Post updated");
+        await refresh();
       } else {
         const created = await api.blogs.create(payload);
-        setFullPost(created);
         toast.success("Post created");
-        setSelectedId(created.id);
+        await refresh();
+        navigate(`/blogs/${created.id}`);
       }
-
-      await refresh();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed to save post");
     } finally {
@@ -256,159 +272,203 @@ const BlogManager = () => {
 
   useSaveShortcut(() => void save(), editing);
 
-  async function remove() {
-    if (!draft.id) return;
-    const ok = window.confirm(`Delete "${draft.title}"? This can't be undone.`);
-    if (!ok) return;
-
+  async function removePost(p: Pick<BlogPostRecord, "id" | "title">) {
+    if (!window.confirm(`Delete "${p.title}"? This can't be undone.`)) return false;
     try {
-      await api.blogs.remove(draft.id);
+      await api.blogs.remove(p.id);
       toast.success("Post deleted");
-      setSelectedId(null);
-      setFullPost(null);
-      setDraft(emptyDraft());
-      setEditing(false);
       await refresh();
+      return true;
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed to delete post");
+      return false;
     }
   }
 
-  async function uploadImage(file: File, kind: "cover" | "og") {
-    try {
-      if (kind === "cover") setUploadingCover(true);
-      if (kind === "og") setUploadingOg(true);
-
-      const { url } = await api.uploads.imgbb(file);
-      if (kind === "cover") update("coverImageUrl", url);
-      if (kind === "og") update("ogImageUrl", url);
-      toast.success("Image uploaded");
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Upload failed");
-    } finally {
-      if (kind === "cover") setUploadingCover(false);
-      if (kind === "og") setUploadingOg(false);
-    }
-  }
-
-  const words = draft.content.replace(/<[^>]+>/g, " ").split(/\s+/).filter(Boolean).length;
-
-  const list = (
-    <ListPane
-      title="Posts"
-      count={filtered.length}
-      search={search}
-      onSearch={setSearch}
-      onNew={newPost}
-      newLabel="New post"
-      loading={loading}
-      emptyText={posts.length === 0 ? "No posts yet. Write your first one." : "No posts match your search."}
-    >
-      {filtered.map((p) => (
-        <ListRow
-          key={p.id}
-          active={editing && p.id === selectedId}
-          onClick={() => openPost(p.id)}
-          title={p.title}
-          meta={new Date(p.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
-          thumb={p.cover_image_url}
-          published={p.published}
-        />
-      ))}
-    </ListPane>
-  );
-
-  const editor = !editing ? (
-    <EmptyEditor
-      title="Select a post"
-      text="Choose a post from the list to edit it, or write a new one."
-      action={
-        <button type="button" onClick={newPost} className={btnPrimary}>
-          <Plus size={16} aria-hidden="true" /> New post
-        </button>
+  async function bulk(action: string, ids: string[]) {
+    const targets = posts.filter((p) => ids.includes(p.id));
+    if (action === "delete" && !window.confirm(`Delete ${targets.length} post(s)? This can't be undone.`)) return;
+    let done = 0;
+    for (const p of targets) {
+      try {
+        if (action === "delete") await api.blogs.remove(p.id);
+        else {
+          // Fetch the full post first so the article content is kept.
+          const full = await api.blogs.getBySlug(p.slug);
+          await api.blogs.update(p.id, recordToPayload(full, { published: action === "publish" }));
+        }
+        done++;
+      } catch {
+        // continue; reported below
       }
-    />
-  ) : (
-    <div>
-      <EditorHeader
-        kicker={draft.id ? "Edit post" : "New post"}
-        title={draft.title || "Untitled post"}
-        dirty={dirty}
-        published={draft.published}
-        onPublishedChange={(v) => update("published", v)}
-        viewHref={draft.id && draft.slug.trim() ? `/blogs/${draft.slug}` : undefined}
-        onDelete={draft.id ? remove : undefined}
-        onSave={() => void save()}
-        saving={saving}
-        saveLabel={draft.id ? "Save changes" : "Create post"}
-        onBack={backToList}
-      />
-      <EditorBody>
-        <Card title="Basics">
-          <Field label="Title">
-            <input value={draft.title} onChange={(e) => onTitleChange(e.target.value)} maxLength={140} className={`${inputCls} h-11 text-base font-medium`} placeholder="Post title" />
-          </Field>
-          <Field label="Web address" hint={`www.fotolaminate.com/blogs/${draft.slug || "…"} — filled in from the title; you can change it.`}>
-            <input value={draft.slug} onChange={(e) => update("slug", slugify(e.target.value))} maxLength={140} className={inputCls} placeholder="my-post-slug" />
-          </Field>
-        </Card>
+    }
+    if (done === targets.length) toast.success(`${done} post(s) updated`);
+    else toast.error(`${done} of ${targets.length} updated — some failed`);
+    await refresh();
+  }
 
-        <Card title="Article" description={`${words} words · about ${Math.max(1, Math.round(words / 200))} min read`}>
-          <Field label="Content" hint="HTML is supported (headings, lists, links).">
-            <textarea value={draft.content} onChange={(e) => update("content", e.target.value)} rows={18} className={textareaCls} placeholder="Write the post here" />
-          </Field>
-        </Card>
+  /* ---------------------------------------------------------------- table */
+  if (!editing) {
+    return (
+      <>
+        <PageTitle
+          title="Blog posts"
+          actions={
+            <button type="button" onClick={() => navigate("/blogs/new")} className={btnPrimary}>
+              <Plus size={16} aria-hidden="true" /> Add post
+            </button>
+          }
+        />
+        <AdminTable
+          rows={rows}
+          loading={loading}
+          columns={[{ label: "Title" }, { label: "Status", className: "w-28" }, { label: "Published on", className: "w-36" }, { label: "Updated", className: "w-32" }]}
+          emptyText={posts.length === 0 ? "No posts yet." : "No posts match these filters."}
+          statusCounts={counts}
+          status={status}
+          onStatus={setStatus}
+          search={search}
+          onSearch={setSearch}
+          searchPlaceholder="Search posts"
+          bulkActions={[
+            { id: "publish", label: "Publish" },
+            { id: "draft", label: "Move to draft" },
+            { id: "delete", label: "Delete", danger: true },
+          ]}
+          onBulk={bulk}
+          renderRow={(p) => (
+            <>
+              <TitleCell
+                thumb={p.cover_image_url}
+                title={p.title}
+                onEdit={() => navigate(`/blogs/${p.id}`)}
+                viewHref={p.published ? `/blogs/${p.slug}` : undefined}
+                extra={[{ label: "Delete", danger: true, onClick: () => void removePost(p) }]}
+              />
+              <td className="py-2.5 pr-4">
+                <StatusBadge published={p.published} />
+              </td>
+              <td className="py-2.5 pr-4 text-slate-500">{formatDate(p.created_at)}</td>
+              <td className="py-2.5 pr-4 text-slate-500">{formatDate(p.updated_at)}</td>
+            </>
+          )}
+        />
+      </>
+    );
+  }
 
-        <Card title="Images">
-          <div className="grid gap-6 md:grid-cols-2">
-            <ImageField label="Cover image" value={draft.coverImageUrl} onChange={(v) => update("coverImageUrl", v)} onUpload={(f) => void uploadImage(f, "cover")} uploading={uploadingCover} />
-            <ImageField
-              label="Social sharing image"
-              value={draft.ogImageUrl}
-              onChange={(v) => update("ogImageUrl", v)}
-              onUpload={(f) => void uploadImage(f, "og")}
-              uploading={uploadingOg}
-              hint="Uses the cover image if empty."
+  /* --------------------------------------------------------------- editor */
+  if (routeId !== "new" && (!listItem || (loadingPost && !fullPost))) {
+    return (
+      <div className="p-10 text-center text-sm text-slate-500">
+        {loading || loadingPost ? (
+          <>
+            <Loader2 size={18} className="mr-2 inline animate-spin" aria-hidden="true" /> Loading…
+          </>
+        ) : (
+          <>
+            This post no longer exists.{" "}
+            <button type="button" onClick={() => navigate("/blogs")} className="font-semibold text-accent hover:underline">
+              Back to posts
+            </button>
+          </>
+        )}
+      </div>
+    );
+  }
+
+  const words = stripHtml(draft.content).split(" ").filter(Boolean).length;
+
+  return (
+    <>
+      <Breadcrumb backLabel="Blog posts" onBack={() => navigate("/blogs")} current={draft.title || "New post"} dirty={dirty} />
+      <EditorLayout
+        main={
+          <>
+            <input
+              value={draft.title}
+              onChange={(e) => onTitleChange(e.target.value)}
+              maxLength={140}
+              placeholder="Post title"
+              aria-label="Post title"
+              className="h-14 w-full rounded-md border border-slate-300 bg-white px-4 font-display text-2xl font-bold text-slate-900 shadow-sm placeholder:text-slate-300 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
             />
-          </div>
-        </Card>
+            <p className="-mt-4 text-xs text-slate-500">
+              Web address: www.fotolaminate.com/blogs/
+              <input
+                value={draft.slug}
+                onChange={(e) => update("slug", slugify(e.target.value))}
+                className="ml-0.5 min-w-[12rem] border-b border-dashed border-slate-300 bg-transparent px-0.5 text-slate-700 focus:border-accent focus:outline-none"
+                aria-label="Web address"
+              />
+            </p>
 
-        <Card title="Search engine (SEO)" description="How this post appears in Google results.">
-          <SeoPreview title={draft.metaTitle || draft.title} description={draft.metaDescription} path={`/blogs/${draft.slug}`} />
-          <Field label="SEO title" counter={{ value: draft.metaTitle.trim().length, ideal: [50, 60] }} hint="Uses the post title if empty.">
-            <input value={draft.metaTitle} onChange={(e) => update("metaTitle", e.target.value)} maxLength={80} className={inputCls} />
-          </Field>
-          <Field label="SEO description" counter={{ value: draft.metaDescription.trim().length, ideal: [140, 160] }}>
-            <textarea value={draft.metaDescription} onChange={(e) => update("metaDescription", e.target.value)} rows={3} maxLength={200} className={textareaCls} />
-          </Field>
-          <div className="grid gap-5 md:grid-cols-2">
-            <Field label="Tags" hint="Separate with commas.">
-              <input value={draft.tags} onChange={(e) => update("tags", e.target.value)} className={inputCls} placeholder="Cold lamination, Maintenance" />
-            </Field>
-            <Field label="Keywords" hint="Separate with commas. Uses the tags if empty.">
-              <input value={draft.keywords} onChange={(e) => update("keywords", e.target.value)} className={inputCls} />
-            </Field>
-          </div>
-        </Card>
+            <Panel title="Article" actions={<span className="text-xs text-slate-500">{words} words · about {Math.max(1, Math.round(words / 200))} min read</span>}>
+              <RichTextEditor value={draft.content} onChange={(html) => update("content", html)} placeholder="Write the article" minHeight={420} />
+            </Panel>
 
-        <Card title="FAQs" description="Shown as questions and answers at the end of the post.">
-          <FaqField faqs={draft.faqs} onChange={(faqs) => update("faqs", faqs)} label="Questions" />
-        </Card>
+            <Panel title="SEO">
+              <SeoPreview title={draft.metaTitle || draft.title} description={draft.metaDescription} path={`/blogs/${draft.slug}`} />
+              <Field label="SEO title" counter={{ value: draft.metaTitle.trim().length, ideal: [50, 60] }} hint="Uses the post title if empty.">
+                <input value={draft.metaTitle} onChange={(e) => update("metaTitle", e.target.value)} maxLength={80} className={inputCls} />
+              </Field>
+              <Field label="SEO description" counter={{ value: draft.metaDescription.trim().length, ideal: [140, 160] }}>
+                <textarea value={draft.metaDescription} onChange={(e) => update("metaDescription", e.target.value)} rows={3} maxLength={200} className={textareaCls} />
+              </Field>
+              <Field label="Keywords" hint="Separate with commas. Uses the tags if empty.">
+                <input value={draft.keywords} onChange={(e) => update("keywords", e.target.value)} className={inputCls} />
+              </Field>
+            </Panel>
 
-        <Card title="Advanced" description="Structured data (JSON-LD) for search engines. Optional.">
-          <JsonListEditor
-            items={draft.schemas}
-            onChange={(schemas) => update("schemas", schemas)}
-            addLabel="Add schema"
-            emptyText="No structured data added."
-            placeholder="Paste JSON or a JSON-LD <script> block"
-          />
-        </Card>
-      </EditorBody>
-    </div>
+            <Panel title="FAQs">
+              <FaqField faqs={draft.faqs} onChange={(faqs) => update("faqs", faqs)} label="Questions shown at the end of the post" />
+            </Panel>
+
+            <Panel title="Structured data (advanced)">
+              <JsonListEditor
+                items={draft.schemas}
+                onChange={(schemas) => update("schemas", schemas)}
+                addLabel="Add schema"
+                emptyText="No structured data added. Optional."
+                placeholder="Paste JSON or a JSON-LD <script> block"
+              />
+            </Panel>
+          </>
+        }
+        sidebar={
+          <>
+            <PublishBox
+              published={draft.published}
+              onPublishedChange={(v) => update("published", v)}
+              updatedAt={fullPost?.updated_at}
+              isNew={!draft.id}
+              viewHref={draft.id && draft.slug ? `/blogs/${draft.slug}` : undefined}
+              onSave={() => void save()}
+              saving={saving}
+              onDelete={
+                draft.id
+                  ? () =>
+                      void removePost({ id: draft.id as string, title: draft.title }).then((ok) => {
+                        if (ok) navigate("/blogs");
+                      })
+                  : undefined
+              }
+            />
+            <MetaBox title="Tags">
+              <input value={draft.tags} onChange={(e) => update("tags", e.target.value)} className={inputCls} placeholder="Cold lamination, Maintenance" aria-label="Tags" />
+              <p className="text-xs text-slate-500">Separate with commas.</p>
+            </MetaBox>
+            <MetaBox title="Cover image">
+              <ImageBox value={draft.coverImageUrl} onChange={(v) => update("coverImageUrl", v)} emptyHint="Drop the cover photo here, or use Upload below" />
+            </MetaBox>
+            <MetaBox title="Social sharing image">
+              <ImageBox value={draft.ogImageUrl} onChange={(v) => update("ogImageUrl", v)} emptyHint="Optional — uses the cover image if empty" />
+            </MetaBox>
+          </>
+        }
+      />
+    </>
   );
-
-  return <ManagerLayout list={list} editor={editor} showEditorOnMobile={editing} />;
 };
 
 export default BlogManager;

@@ -41,6 +41,8 @@ export type ProductRecord = {
 
 import type { PageContent } from "@/lib/page-types";
 
+export type UploadedImage = { name: string; url: string; size: number; width?: number; height?: number; createdAt: string };
+
 const ADMIN_TOKEN_STORAGE_KEY = "admin_token";
 
 const API_BASE_URL = (() => {
@@ -160,18 +162,29 @@ export const api = {
       apiFetch<PageContent>(`/api/pages/${encodeURIComponent(pageId)}`, { method: "PUT", body: JSON.stringify(payload) }),
   },
   uploads: {
-    imgbb: async (file: File) => {
+    upload: async (file: File) => {
       const adminToken = getAdminToken();
       const form = new FormData();
       form.append("image", file);
 
-      const res = await fetch(buildApiUrl("/api/uploads/imgbb"), {
+      const res = await fetch(buildApiUrl("/api/uploads"), {
         method: "POST",
         body: form,
         headers: adminToken ? { Authorization: `Bearer ${adminToken}` } : undefined,
       });
-      if (!res.ok) throw new Error(await res.text());
-      return (await res.json()) as { url: string };
+      if (!res.ok) {
+        const text = await res.text();
+        let message = text || `Upload failed (${res.status})`;
+        try {
+          message = (JSON.parse(text) as { error?: string }).error ?? message;
+        } catch {
+          // keep raw text
+        }
+        throw new Error(message);
+      }
+      return (await res.json()) as UploadedImage;
     },
+    list: () => apiFetch<UploadedImage[]>("/api/uploads"),
+    remove: (name: string) => apiFetch<{ ok: true }>(`/api/uploads/${encodeURIComponent(name)}`, { method: "DELETE" }),
   },
 };
