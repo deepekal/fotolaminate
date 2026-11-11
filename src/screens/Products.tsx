@@ -2,11 +2,9 @@
 
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import ProductCategories, { type ProductCategoryItem } from "@/components/ProductCategories";
-import FeaturedProducts from "@/components/FeaturedProducts";
 import Link from "next/link";
-import { ClipboardList, Gauge, ThermometerSun, Settings } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { ClipboardList, Gauge, ThermometerSun, Settings, Search, X } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { api, ProductRecord } from "@/lib/api";
 import { toast } from "sonner";
 import { slugifyCategory } from "@/lib/slug";
@@ -26,13 +24,46 @@ function getCategoryFallback(category: string | null | undefined): string {
   return photoImg.src;
 }
 
+const ALL = "all";
+
 type ProductsPageProps = {
   initialProducts?: ProductRecord[];
 };
 
+const ProductCard = ({ product }: { product: ProductRecord }) => (
+  <Link
+    href={`/products/${product.slug}`}
+    className="group flex flex-col overflow-hidden rounded-lg border border-border bg-white shadow-industrial hover-lift"
+  >
+    <div className="relative flex h-44 items-center justify-center overflow-hidden bg-white p-3">
+      <img
+        src={product.cover_image_url || getCategoryFallback(product.category)}
+        alt={product.name}
+        className="h-full w-full object-contain transition-transform duration-500 group-hover:scale-105"
+        loading="lazy"
+        onError={(e) => {
+          e.currentTarget.src = getCategoryFallback(product.category);
+        }}
+      />
+    </div>
+    <div className="flex flex-1 flex-col border-t border-border p-4">
+      <h3 className="mb-1 font-display text-base font-bold leading-snug text-foreground transition-colors group-hover:text-accent">
+        {product.name}
+      </h3>
+      {product.summary ? (
+        <p className="mb-3 line-clamp-2 text-xs leading-relaxed text-muted-foreground">{product.summary}</p>
+      ) : null}
+      <div className="mt-auto font-display text-sm font-semibold text-accent">View details →</div>
+    </div>
+  </Link>
+);
+
 const ProductsPage = ({ initialProducts = [] }: ProductsPageProps) => {
   const [products, setProducts] = useState<ProductRecord[]>(initialProducts);
   const [loading, setLoading] = useState(initialProducts.length === 0);
+  const [activeCategory, setActiveCategory] = useState<string>(ALL);
+  const [search, setSearch] = useState("");
+  const resultsRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     if (initialProducts.length > 0) return;
@@ -94,125 +125,156 @@ const ProductsPage = ({ initialProducts = [] }: ProductsPageProps) => {
     return entries;
   }, [products]);
 
-  const categoryItems: ProductCategoryItem[] = useMemo(() => {
-    return productsByCategory.map(([category, list]) => {
-      const href = `/products/category/${slugifyCategory(category)}`;
-      return {
-        title: category,
-        desc: `${list.length} models`,
-        img: list.find((p) => Boolean(p.cover_image_url))?.cover_image_url ?? undefined,
-        href,
-      };
-    });
+  // Keep the selected category in the URL (?category=<slug>) so a filtered view can be shared.
+  useEffect(() => {
+    const slug = new URLSearchParams(window.location.search).get("category");
+    if (slug && productsByCategory.some(([c]) => slugifyCategory(c) === slug)) setActiveCategory(slug);
   }, [productsByCategory]);
+
+  const selectCategory = (slug: string) => {
+    setActiveCategory(slug);
+    const url = new URL(window.location.href);
+    if (slug === ALL) url.searchParams.delete("category");
+    else url.searchParams.set("category", slug);
+    window.history.replaceState(null, "", url.toString());
+
+    // If the visitor has scrolled past the top of the results, bring them back to it.
+    const results = resultsRef.current;
+    if (results && results.getBoundingClientRect().top < 0) {
+      results.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
+  const visibleGroups = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return productsByCategory
+      .filter(([category]) => activeCategory === ALL || slugifyCategory(category) === activeCategory)
+      .map(([category, list]) => {
+        const matches = q
+          ? list.filter((p) => `${p.name} ${p.category ?? ""} ${p.summary ?? ""}`.toLowerCase().includes(q))
+          : list;
+        return [category, matches] as [string, ProductRecord[]];
+      })
+      .filter(([, list]) => list.length > 0);
+  }, [productsByCategory, activeCategory, search]);
+
+  const visibleCount = visibleGroups.reduce((n, [, list]) => n + list.length, 0);
+
+  const chipClass = (active: boolean) =>
+    `shrink-0 rounded-full border px-4 py-2 text-xs lg:px-3 lg:py-1.5 font-semibold transition-colors ${
+      active
+        ? "border-accent bg-accent text-accent-foreground"
+        : "border-border bg-white text-foreground hover:border-accent hover:text-accent"
+    }`;
 
   return (
     <>
       <Navbar />
 
-    <header className="gradient-navy pt-28 pb-16">
+    <header className="gradient-navy pt-28 pb-12">
       <div className="container-max px-4 md:px-8 lg:px-16">
         <div className="max-w-3xl">
           <span className="mb-3 inline-block rounded-full border border-accent/40 bg-accent/10 px-4 py-1 font-display text-sm font-semibold tracking-wider text-accent">
             Products
           </span>
           <h1 className="mb-4 font-display text-4xl font-bold leading-tight text-primary-foreground md:text-5xl">
-            Machines designed for professional lamination output
+            All Products
           </h1>
           <p className="text-lg text-primary-foreground/75">
-            Explore categories and best-selling models. For a recommendation, share your media size, film type, and
-            expected daily volume.
+            {products.length > 0
+              ? `${products.length} machines and accessories across ${productsByCategory.length} categories. `
+              : ""}
+            For a recommendation, share your media size, film type, and expected daily volume.
           </p>
         </div>
       </div>
     </header>
 
     <main>
-      <ProductCategories items={categoryItems} detailsLabel="Browse models →" />
-      <FeaturedProducts enquireHref="/contact" />
-
-      <section className="section-padding bg-white">
-        <div className="container-max">
-          <div className="mb-10 text-center">
-            <span className="mb-2 inline-block font-display text-sm font-bold uppercase tracking-widest text-accent">
-              Categories
-            </span>
-            <h2 className="font-display text-3xl font-bold text-foreground md:text-4xl">Browse models by category</h2>
+      <div className="sticky top-[52px] z-30 border-b border-border bg-white/95 shadow-sm backdrop-blur lg:top-[85px]">
+        <div className="container-max flex flex-col gap-3 px-4 py-3 md:px-8 lg:flex-row lg:items-center">
+          <div className="relative lg:w-52 lg:shrink-0">
+            <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <input
+              type="search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search products…"
+              aria-label="Search products"
+              className="w-full rounded-full border border-border bg-muted py-2 pl-9 pr-9 text-sm text-foreground placeholder:text-muted-foreground focus:border-accent focus:outline-none"
+            />
+            {search ? (
+              <button
+                type="button"
+                onClick={() => setSearch("")}
+                aria-label="Clear search"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                <X size={16} />
+              </button>
+            ) : null}
           </div>
 
+          <div className="flex gap-2 overflow-x-auto pb-1 lg:flex-wrap lg:gap-1.5 lg:overflow-visible lg:pb-0">
+            <button type="button" onClick={() => selectCategory(ALL)} className={chipClass(activeCategory === ALL)}>
+              All ({products.length})
+            </button>
+            {productsByCategory.map(([category, list]) => {
+              const slug = slugifyCategory(category);
+              return (
+                <button key={category} type="button" onClick={() => selectCategory(slug)} className={chipClass(activeCategory === slug)}>
+                  {category} ({list.length})
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      <section ref={resultsRef} className="scroll-mt-[180px] bg-muted py-12 lg:scroll-mt-[212px]">
+        <div className="container-max px-4 md:px-8">
           {loading ? (
-            <div className="rounded-lg border border-border bg-muted p-6 text-sm text-muted-foreground shadow-industrial">
+            <div className="rounded-lg border border-border bg-white p-6 text-sm text-muted-foreground shadow-industrial">
               Loading…
             </div>
           ) : products.length === 0 ? (
-            <div className="rounded-lg border border-border bg-muted p-6 text-sm text-muted-foreground shadow-industrial">
+            <div className="rounded-lg border border-border bg-white p-6 text-sm text-muted-foreground shadow-industrial">
               No products published yet.
             </div>
+          ) : visibleCount === 0 ? (
+            <div className="rounded-lg border border-border bg-white p-8 text-center text-sm text-muted-foreground shadow-industrial">
+              No products match “{search}”.{" "}
+              <button
+                type="button"
+                onClick={() => {
+                  setSearch("");
+                  selectCategory(ALL);
+                }}
+                className="font-semibold text-accent hover:underline"
+              >
+                Show all products
+              </button>
+            </div>
           ) : (
-            <div className="space-y-16">
-              {/* Specific Series: Cold Lamination */}
-              <section className="space-y-8">
-                <div className="text-center">
-                  <h3 className="font-display text-3xl font-bold text-foreground">Cold Lamination Machine Series</h3>
-                  <p className="mx-auto mt-2 max-w-2xl text-muted-foreground">
-                    Available in three distinct models to suit different production scales and automation needs.
-                  </p>
-                </div>
-                <div className="grid gap-6 md:grid-cols-3">
-                  {[
-                    { title: "Fully Auto Model", desc: "Maximum throughput with automatic feeding and finishing." },
-                    { title: "Semi Auto Model", desc: "Balanced automation for mid-to-high volume workflows." },
-                    { title: "Professional Model", desc: "Heavy-duty construction for consistent precision output." }
-                  ].map((m) => (
-                    <div key={m.title} className="rounded-lg border border-border bg-white p-6 shadow-industrial hover-lift">
-                      <div className="mb-4 h-40 overflow-hidden rounded-md bg-muted">
-                        <img src={coldImg.src} alt={m.title} className="h-full w-full object-contain" />
-                      </div>
-                      <h4 className="mb-2 font-display text-xl font-bold text-foreground">{m.title}</h4>
-                      <p className="text-sm text-muted-foreground">{m.desc}</p>
-                      <Link href="/products/category/cold-lamination-machine" className="mt-4 inline-block font-display text-sm font-semibold text-accent hover:text-accent/80">
-                        View Models →
-                      </Link>
-                    </div>
-                  ))}
-                </div>
-              </section>
-
-              <div className="h-px bg-border" />
-
-              {productsByCategory.map(([category, list]) => (
-                <section key={category} className="space-y-5">
-                  <div className="flex items-baseline justify-between gap-4">
-                    <h3 className="font-display text-2xl font-bold text-foreground">{category}</h3>
-                    <div className="text-sm text-muted-foreground">{list.length} models</div>
+            <div className="space-y-12">
+              {visibleGroups.map(([category, list]) => (
+                <section key={category} id={slugifyCategory(category)} className="scroll-mt-48">
+                  <div className="mb-5 flex flex-wrap items-baseline justify-between gap-2 border-b border-border pb-3">
+                    <h2 className="font-display text-2xl font-bold text-foreground">
+                      {category}{" "}
+                      <span className="text-base font-medium text-muted-foreground">({list.length})</span>
+                    </h2>
+                    <Link
+                      href={`/products/category/${slugifyCategory(category)}`}
+                      className="font-display text-sm font-semibold text-accent hover:text-accent/80"
+                    >
+                      Category page →
+                    </Link>
                   </div>
 
-                  <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                  <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                     {list.map((p) => (
-                      <Link
-                        key={p.id}
-                        href={`/products/${p.slug}`}
-                        className="group overflow-hidden rounded-lg bg-white shadow-industrial hover-lift border border-border"
-                      >
-                        <div className="relative h-52 overflow-hidden bg-white">
-                          <img
-                            src={p.cover_image_url || getCategoryFallback(p.category)}
-                            alt={p.name}
-                            className="h-full w-full object-contain"
-                            loading="lazy"
-                            onError={(e) => {
-                              e.currentTarget.src = getCategoryFallback(p.category);
-                            }}
-                          />
-                        </div>
-                        <div className="p-5">
-                          <h4 className="mb-2 font-display text-lg font-bold text-foreground">{p.name}</h4>
-                          <p className="mb-4 text-sm text-muted-foreground">{p.summary ?? ""}</p>
-                          <div className="inline-block font-display text-sm font-semibold text-accent transition-colors group-hover:text-accent/80">
-                            View Details →
-                          </div>
-                        </div>
-                      </Link>
+                      <ProductCard key={p.id} product={p} />
                     ))}
                   </div>
                 </section>
@@ -222,7 +284,7 @@ const ProductsPage = ({ initialProducts = [] }: ProductsPageProps) => {
         </div>
       </section>
 
-      <section className="section-padding bg-muted">
+      <section className="section-padding bg-white">
         <div className="container-max">
           <div className="mb-10 text-center">
             <span className="mb-2 inline-block font-display text-sm font-bold uppercase tracking-widest text-accent">
@@ -266,7 +328,7 @@ const ProductsPage = ({ initialProducts = [] }: ProductsPageProps) => {
         </div>
       </section>
 
-      <section id="request-quote" className="section-padding bg-white">
+      <section id="request-quote" className="section-padding bg-muted">
         <div className="container-max">
           <div className="rounded-lg gradient-navy p-8 text-primary-foreground shadow-industrial md:p-10">
             <div className="grid items-center gap-8 lg:grid-cols-3">

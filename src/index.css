@@ -4,7 +4,8 @@
 
 @layer base {
   html, body {
-    @apply overflow-x-hidden;
+    /* clip (not hidden) blocks sideways scroll without breaking position: sticky */
+    overflow-x: clip;
     position: relative;
     width: 100%;
   }
