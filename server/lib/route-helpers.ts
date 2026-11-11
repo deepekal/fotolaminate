@@ -20,6 +20,12 @@ export function getBearerToken(req: Request): string | null {
   return match?.[1]?.trim() ?? null;
 }
 
+/** True when the request carries the admin token (dashboard). Public visitors only see published content. */
+export function isAdminRequest(req: Request) {
+  const adminToken = process.env.ADMIN_TOKEN ?? "";
+  return Boolean(adminToken) && getBearerToken(req) === adminToken;
+}
+
 export function requireAdmin(req: Request) {
   const adminToken = process.env.ADMIN_TOKEN ?? "";
   if (!adminToken) return jsonError(500, "ADMIN_TOKEN is not set on the server");

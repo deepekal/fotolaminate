@@ -1,15 +1,16 @@
 import { NextResponse } from "next/server";
 import { query } from "@server/lib/db";
-import { jsonError, pgToResponse, requireAdmin } from "@server/lib/route-helpers";
+import { isAdminRequest, jsonError, pgToResponse, requireAdmin } from "@server/lib/route-helpers";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
     const r = await query(
       `select *
        from public.products
+       ${isAdminRequest(req) ? "" : "where published = true"}
        order by created_at desc`,
     );
     return NextResponse.json(r.rows);

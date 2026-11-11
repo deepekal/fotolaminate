@@ -1,16 +1,17 @@
 import { NextResponse } from "next/server";
 import { query } from "@server/lib/db";
-import { jsonError, pgToResponse, requireAdmin } from "@server/lib/route-helpers";
+import { isAdminRequest, jsonError, pgToResponse, requireAdmin } from "@server/lib/route-helpers";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
     const r = await query(
       `select id, title, slug, meta_title, meta_description, tags, keywords, cover_image_url, og_image_url, faqs, published, created_at, updated_at,
               left(content, 220) as excerpt
        from public.blog_posts
+       ${isAdminRequest(req) ? "" : "where published = true"}
        order by created_at desc`,
     );
     return NextResponse.json(r.rows);
