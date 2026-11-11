@@ -101,6 +101,7 @@ const Contact = ({
               <option>UV Coating Machine</option>
               <option>Round Corner Cutter Machine</option>
               <option>PVC Cold Lamination Roll</option>
+              <option>Machine Accessories &amp; Raw Materials</option>
             </select>
             <textarea
               placeholder="Your Message"

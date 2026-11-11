@@ -18,7 +18,7 @@ const certifications = [
   },
   {
     icon: BadgeCheck,
-    title: "ISO-Aligned Quality Process",
+    title: "ISO Aligned Quality Process",
     desc: "Manufacturing and testing processes aligned with industry quality standards.",
   },
   {

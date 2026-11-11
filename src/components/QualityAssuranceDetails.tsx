@@ -16,9 +16,9 @@ const defaultItems = [
 ];
 
 const QualityAssuranceDetails = ({
-  title = "Quality Assurance by Codealam",
+  title = "Quality Assurance by Codalam",
   description =
-    "Our commitment to precision is backed by rigorous standards and industry-recognized certifications. We ensure every machine passing through our facility meets the \"Codealam\" quality benchmark.",
+    "Our commitment to precision is backed by rigorous standards and industry-recognized certifications. We ensure every machine passing through our facility meets the \"Codalam\" quality benchmark.",
   items,
 }: QualityAssuranceDetailsProps) => {
   const listItems = items?.length ? items : defaultItems;

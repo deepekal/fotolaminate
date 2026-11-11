@@ -64,8 +64,8 @@ const About = ({
             loading="lazy"
           />
           <div className="absolute -bottom-4 -left-4 rounded-lg gradient-navy p-4 text-primary-foreground shadow-lg">
-            <div className="font-display text-2xl font-bold">ISO 9001</div>
-            <div className="text-xs text-primary-foreground/70">Certified Quality</div>
+            <div className="font-display text-2xl font-bold">ISO Aligned</div>
+            <div className="text-xs text-primary-foreground/70">Quality Process</div>
           </div>
         </motion.div>
       </div>
