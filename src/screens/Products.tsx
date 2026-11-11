@@ -191,7 +191,7 @@ const ProductsPage = ({ initialProducts = [] }: ProductsPageProps) => {
     </header>
 
     <main>
-      <div className="sticky top-[60px] z-30 sm:top-[64px] border-b border-border bg-white/95 shadow-sm backdrop-blur lg:top-[89px]">
+      <div className="sticky top-16 z-30 border-b border-border bg-white/95 shadow-sm backdrop-blur lg:top-[76px]">
         <div className="container-max flex flex-col gap-3 py-3 lg:flex-row lg:items-center">
           <div className="relative lg:w-52 lg:shrink-0">
             <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
@@ -231,7 +231,7 @@ const ProductsPage = ({ initialProducts = [] }: ProductsPageProps) => {
         </div>
       </div>
 
-      <section ref={resultsRef} className="scroll-mt-[188px] bg-muted py-12 sm:scroll-mt-[192px] lg:scroll-mt-[216px]">
+      <section ref={resultsRef} className="scroll-mt-[192px] bg-muted py-12 lg:scroll-mt-[204px]">
         <div className="container-max">
           {loading ? (
             <div className="rounded-lg border border-border bg-white p-6 text-sm text-muted-foreground shadow-industrial">
