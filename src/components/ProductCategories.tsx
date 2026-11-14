@@ -7,6 +7,8 @@ import hotImg from "@/assets/product-hot.jpg";
 import coldImg from "@/assets/product-cold.jpg";
 import industrialImg from "@/assets/product-industrial.jpg";
 import Link from "next/link";
+import Image from "next/image";
+import { canOptimize } from "@/lib/image-src";
 import type { StaticImageData } from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { api, type ProductRecord } from "@/lib/api";
@@ -37,7 +39,7 @@ type ProductCategoriesProps = {
   items?: ProductCategoryItem[];
   detailsLabel?: string;
   useDb?: boolean;
-  initialDbProducts?: ProductRecord[];
+  initialDbProducts?: Pick<ProductRecord, "category" | "cover_image_url">[];
 };
 
 function getFallbackImage(title: string) {
@@ -64,7 +66,7 @@ const ProductCategories = ({
   useDb = false,
   initialDbProducts,
 }: ProductCategoriesProps) => {
-  const [dbProducts, setDbProducts] = useState<ProductRecord[] | null>(initialDbProducts ?? null);
+  const [dbProducts, setDbProducts] = useState<Pick<ProductRecord, "category" | "cover_image_url">[] | null>(initialDbProducts ?? null);
   const [loadingDb, setLoadingDb] = useState(() => Boolean(useDb && !(items && items.length) && !initialDbProducts));
   const [dbError, setDbError] = useState<string | null>(null);
 
@@ -97,7 +99,7 @@ const ProductCategories = ({
   const dbItems: ProductCategoryItem[] | null = useMemo(() => {
     if (!useDb || dbProducts === null) return null;
 
-    const map = new Map<string, ProductRecord[]>();
+    const map = new Map<string, Pick<ProductRecord, "category" | "cover_image_url">[]>();
     for (const p of dbProducts) {
       const key = (p.category ?? "").trim() || "Other";
       const arr = map.get(key);
@@ -173,11 +175,13 @@ const ProductCategories = ({
             className="group overflow-hidden rounded-lg bg-white shadow-industrial hover-lift"
           >
             <div className="relative h-52 overflow-hidden">
-              <img
+              <Image
                 src={normalizeImageSrc(cat.img ?? getFallbackImage(cat.title))}
                 alt={cat.title}
-                className="h-full w-full object-contain"
-                loading="lazy"
+                fill
+                sizes="(min-width: 1024px) 400px, (min-width: 640px) 50vw, 100vw"
+                className="object-contain"
+                unoptimized={!canOptimize(normalizeImageSrc(cat.img ?? getFallbackImage(cat.title)))}
               />
             </div>
             <div className="p-5">

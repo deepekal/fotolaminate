@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { PRODUCT_LIST_COLUMNS } from "@server/lib/product-columns";
 import { query } from "@server/lib/db";
 import { isAdminRequest, jsonError, pgToResponse, requireAdmin } from "@server/lib/route-helpers";
 
@@ -8,7 +9,7 @@ export const dynamic = "force-dynamic";
 export async function GET(req: Request) {
   try {
     const r = await query(
-      `select *
+      `select ${isAdminRequest(req) ? "*" : PRODUCT_LIST_COLUMNS}
        from public.products
        ${isAdminRequest(req) ? "" : "where published = true"}
        order by created_at desc`,

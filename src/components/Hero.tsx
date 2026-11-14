@@ -1,6 +1,3 @@
-"use client";
-
-import { motion } from "framer-motion";
 import { Shield, Factory, Users, Youtube, Instagram, Facebook, Linkedin, Twitter } from "lucide-react";
 import heroImg from "@/assets/hero-machine.jpg";
 
@@ -70,12 +67,7 @@ const Hero = ({
 
     <div className="relative z-10 flex min-h-[100svh] items-start pt-28 pb-16 md:pt-32 md:pb-20">
       <div className="container-max">
-        <motion.div
-          initial={{ opacity: 0, y: 40 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-          className="w-full max-w-4xl"
-        >
+        <div className="w-full max-w-4xl">
           <span className="mb-4 inline-block rounded-full border border-accent/40 bg-accent/10 px-4 py-1 font-display text-sm font-semibold tracking-wider text-accent">
             {badge}
           </span>
@@ -107,7 +99,7 @@ const Hero = ({
               </div>
             ))}
           </div>
-        </motion.div>
+        </div>
       </div>
     </div>
   </section>

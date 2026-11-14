@@ -4,6 +4,7 @@ import Hero from "@/components/Hero";
 import About from "@/components/About";
 import ProductCategories from "@/components/ProductCategories";
 import type { PageContent, PageSection } from "@/lib/page-types";
+import type { ProductRecord } from "@/lib/api";
 
 const FeaturedProducts = dynamic(() => import("@/components/FeaturedProducts"));
 const LatestBlogs = dynamic(() => import("@/components/LatestBlogs"));
@@ -22,7 +23,7 @@ const QualityAssuranceDetails = dynamic(() => import("@/components/QualityAssura
 
 type IndexProps = {
   page?: PageContent | null;
-  initialProducts?: any[];
+  initialProducts?: ProductRecord[];
 };
 
 function getSection(page: PageContent | null | undefined, sectionId: string): PageSection | null {
@@ -85,8 +86,11 @@ const Index = ({ page, initialProducts }: IndexProps) => {
         paragraph1={aboutParagraphs[0] || undefined}
         paragraph2={aboutParagraphs[1] || undefined}
       />
-      <ProductCategories useDb initialDbProducts={initialProducts} />
-      <FeaturedProducts enquireHref="/#contact" />
+      <ProductCategories
+        useDb
+        initialDbProducts={initialProducts?.map(({ category, cover_image_url }) => ({ category, cover_image_url }))}
+      />
+      <FeaturedProducts enquireHref="/#contact" initialProducts={initialProducts?.slice(0, 3)} />
       <WhyChooseUs title={getFieldValue(whyUsSection, "h2")} reasons={getCardItems(whyUsSection)} />
       <Applications title={getFieldValue(applicationsSection, "h2")} applications={getCardItems(applicationsSection)} />
       <Manufacturing

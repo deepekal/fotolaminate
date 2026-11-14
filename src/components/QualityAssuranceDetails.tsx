@@ -66,6 +66,8 @@ const QualityAssuranceDetails = ({
                 src="/OurTeam2.jpeg"
                 alt="Quality Assurance Team"
                 className="h-auto w-full object-contain"
+                loading="lazy"
+                decoding="async"
                 onError={(e) => {
                   e.currentTarget.style.display = "none";
                 }}

@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import factoryImg from "@/assets/factory.jpg";
+import Image from "next/image";
 
 type AboutProps = {
   title?: string;
@@ -57,11 +58,11 @@ const About = ({
           transition={{ duration: 0.6 }}
           className="relative"
         >
-          <img
-            src={typeof factoryImg === "string" ? factoryImg : factoryImg.src}
+          <Image
+            src={factoryImg}
             alt="Foto Laminate manufacturing facility"
-            className="rounded-lg shadow-industrial"
-            loading="lazy"
+            className="h-auto w-full rounded-lg shadow-industrial"
+            sizes="(min-width: 1024px) 600px, 100vw"
           />
           <div className="absolute -bottom-4 -left-4 rounded-lg gradient-navy p-4 text-primary-foreground shadow-lg">
             <div className="font-display text-2xl font-bold">ISO Aligned</div>

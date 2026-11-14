@@ -1,3 +1,4 @@
+import { PRODUCT_LIST_COLUMNS } from "@server/lib/product-columns";
 import ProductsPage from "@/screens/Products";
 import type { Metadata } from "next";
 
@@ -13,7 +14,7 @@ export const metadata: Metadata = {
 export default async function Page() {
   let initialProducts: any[] = [];
   try {
-    const res = await query(`select * from public.products where published = true order by created_at desc`);
+    const res = await query(`select ${PRODUCT_LIST_COLUMNS} from public.products where published = true order by created_at desc`);
     initialProducts = res.rows;
   } catch(e) {}
   return <ProductsPage initialProducts={initialProducts} />;

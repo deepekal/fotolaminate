@@ -1,3 +1,4 @@
+import { PRODUCT_LIST_COLUMNS } from "@server/lib/product-columns";
 import ProductCategoryPage from "@/screens/ProductCategory";
 import type { Metadata } from "next";
 import { query } from "@server/lib/db";
@@ -72,7 +73,7 @@ export default async function Page({
 
   try {
     const res = await query<ProductRecord>(
-      "select * from public.products where published = true order by created_at desc"
+      `select ${PRODUCT_LIST_COLUMNS} from public.products where published = true order by created_at desc`
     );
     const published = res.rows;
     const matched = published.filter(

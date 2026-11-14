@@ -7,10 +7,13 @@ import { api, ProductRecord } from "@/lib/api";
 import fallbackImg from "@/assets/product-photo.jpg";
 import coldImg from "@/assets/product-cold.jpg";
 import rollImg from "@/assets/product-roll.jpg";
-import type { StaticImageData } from "next/image";
+import Image, { type StaticImageData } from "next/image";
+import { canOptimize } from "@/lib/image-src";
 
 type FeaturedProductsProps = {
   enquireHref?: string;
+  /** Rendered on the server so the list doesn't have to be fetched again. */
+  initialProducts?: ProductRecord[];
 };
 
 // Static fallback products shown when API/DB is unavailable
@@ -83,11 +86,13 @@ const STATIC_IMAGES: Record<string, StaticImageData> = {
   "static-3": rollImg as StaticImageData,
 };
 
-const FeaturedProducts = ({ enquireHref = "/contact" }: FeaturedProductsProps) => {
-  const [loading, setLoading] = useState(true);
-  const [products, setProducts] = useState<ProductRecord[]>([]);
+const FeaturedProducts = ({ enquireHref = "/contact", initialProducts }: FeaturedProductsProps) => {
+  const hasInitial = Boolean(initialProducts?.length);
+  const [loading, setLoading] = useState(!hasInitial);
+  const [products, setProducts] = useState<ProductRecord[]>(hasInitial ? initialProducts!.slice(0, 3) : []);
 
   useEffect(() => {
+    if (hasInitial) return;
     let active = true;
     async function load() {
       setLoading(true);
@@ -161,12 +166,13 @@ const FeaturedProducts = ({ enquireHref = "/contact" }: FeaturedProductsProps) =
                 className="group overflow-hidden rounded-lg border border-border bg-white hover-lift"
               >
                 <div className="relative h-56 overflow-hidden bg-white">
-                  <img
+                  <Image
                     src={typeof p.img === "string" ? p.img : (p.img as { src: string }).src}
                     alt={p.name}
-                    className="h-full w-full object-contain"
-                    loading="lazy"
-                    decoding="async"
+                    fill
+                    sizes="(min-width: 768px) 400px, 100vw"
+                    className="object-contain"
+                    unoptimized={!canOptimize(typeof p.img === "string" ? p.img : (p.img as { src: string }).src)}
                     onError={(e) => {
                       e.currentTarget.src = typeof fallbackImg === "string" ? fallbackImg : fallbackImg.src;
                     }}

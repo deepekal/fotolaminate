@@ -2,6 +2,8 @@ import Index from "@/screens/Index";
 import { getPageContent } from "@server/lib/page-data";
 import { PageSchemas } from "@/lib/schema-helpers";
 import { query } from "../../server/lib/db";
+import { PRODUCT_LIST_COLUMNS } from "@server/lib/product-columns";
+import type { ProductRecord } from "@/lib/api";
 
 import type { Metadata } from "next";
 
@@ -18,9 +20,11 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function Page() {
   const page = await getPageContent("home");
-  let initialProducts: any[] = [];
+  let initialProducts: ProductRecord[] = [];
   try {
-    const res = await query(`select * from public.products where published = true order by created_at desc`);
+    const res = await query<ProductRecord>(
+      `select ${PRODUCT_LIST_COLUMNS} from public.products where published = true order by created_at desc`,
+    );
     initialProducts = res.rows;
   } catch(e) {}
   return (

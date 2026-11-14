@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { CheckCircle2 } from "lucide-react";
 import factoryImg from "@/assets/factory.jpg";
+import Image from "next/image";
 
 const defaultSteps = [
   "In-house Design & Engineering",
@@ -37,12 +38,12 @@ const Manufacturing = ({
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
           >
-            <img
-              src={typeof factoryImg === "string" ? factoryImg : factoryImg.src}
-              alt="Foto Laminate manufacturing process"
-              className="rounded-lg shadow-industrial"
-              loading="lazy"
-            />
+            <Image
+            src={factoryImg}
+            alt="Foto Laminate manufacturing process"
+            className="h-auto w-full rounded-lg shadow-industrial"
+            sizes="(min-width: 1024px) 600px, 100vw"
+          />
           </motion.div>
           <motion.div
             initial={{ opacity: 0, x: 30 }}

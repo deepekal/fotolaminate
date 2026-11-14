@@ -1,3 +1,4 @@
+import { PRODUCT_LIST_COLUMNS } from "@server/lib/product-columns";
 import ProductDetailPage from "@/screens/ProductDetail";
 import { stripHtml } from "@/lib/rich-text";
 
@@ -166,7 +167,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
   if (initialProduct?.category) {
     try {
       const relRes = await query<ProductRecord>(
-        "select * from public.products where published = true and category = $1 and slug != $2 order by created_at desc limit 3",
+        `select ${PRODUCT_LIST_COLUMNS} from public.products where published = true and category = $1 and slug != $2 order by created_at desc limit 3`,
         [initialProduct.category, slug]
       );
       relatedProducts = relRes.rows;
