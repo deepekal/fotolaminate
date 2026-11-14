@@ -71,7 +71,9 @@ const Navbar = () => {
         <Link href="/" aria-label="Foto Laminate — home" className="shrink-0">
           <img
             src="/logo-360.webp"
-            srcSet="/logo-360.webp 1x, /logo-720.webp 2x"
+            srcSet="/logo-360.webp 360w, /logo-720.webp 720w"
+            sizes="(min-width: 1280px) 227px, (min-width: 1024px) 159px, (min-width: 640px) 204px, 181px"
+            fetchPriority="high"
             alt="Foto Laminate"
             width={204}
             height={36}

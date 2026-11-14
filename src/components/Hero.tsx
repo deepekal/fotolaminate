@@ -60,6 +60,7 @@ const Hero = ({
       alt="Photo lamination machine by Foto Laminate"
       fill
       priority
+      quality={60}
       className="object-cover"
       sizes="100vw"
     />

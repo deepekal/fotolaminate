@@ -3,7 +3,7 @@ import "../index.css";
 export const dynamic = "force-dynamic";
 
 import type { Metadata } from "next";
-import Script from "next/script";
+import Analytics from "@/components/Analytics";
 import Providers from "./providers";
 
 export const metadata: Metadata = {
@@ -77,7 +77,8 @@ import { Rajdhani, Open_Sans } from "next/font/google";
 
 const rajdhani = Rajdhani({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  // Only headings/labels use Rajdhani, all at semibold or bold.
+  weight: ["600", "700"],
   variable: "--font-display",
 });
 
@@ -95,34 +96,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body suppressHydrationWarning>
 
-        {/* Google Tag Manager */}
-        <Script id="gtm-init" strategy="lazyOnload">
-          {`
-            window.dataLayer = window.dataLayer || [];
-            window.dataLayer.push({'gtm.start': new Date().getTime(), event:'gtm.js'});
-          `}
-        </Script>
-        <Script
-          id="gtm-script"
-          src="https://www.googletagmanager.com/gtm.js?id=GTM-KNCTP7TN"
-          strategy="lazyOnload"
-        />
-
-        {/* Google Ads & Analytics Tag (gtag.js) */}
-        <Script
-          id="gtag-script"
-          src="https://www.googletagmanager.com/gtag/js?id=AW-17914852419"
-          strategy="lazyOnload"
-        />
-        <Script id="gtag-init" strategy="lazyOnload">
-          {`
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-            gtag('config', 'AW-17914852419');
-            gtag('config', 'G-801HN559VK');
-          `}
-        </Script>
+        <Analytics />
 
         <Providers>{children}</Providers>
       </body>

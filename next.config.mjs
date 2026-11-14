@@ -3,6 +3,7 @@ const nextConfig = {
   reactStrictMode: true,
   images: {
     formats: ["image/avif", "image/webp"],
+    qualities: [60, 75],
     // Uploaded images get a new file name when replaced, so resized copies can be cached long.
     minimumCacheTTL: 60 * 60 * 24 * 30,
     remotePatterns: [
