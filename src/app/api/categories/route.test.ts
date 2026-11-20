@@ -24,6 +24,7 @@ describe("GET /api/categories", () => {
     expect(sql).toContain("product_categories");
     expect(sql).toContain("order by c.sort_order");
     expect(sql).toContain("product_count");
+    expect(sql).toContain("cover_image_url");
   });
 });
 

@@ -9,6 +9,7 @@ export type CategoryRecord = {
   created_at: string;
   updated_at: string;
   product_count?: number;
+  cover_image_url?: string | null;
 };
 
 export const CATEGORY_NAME_MAX = 80;

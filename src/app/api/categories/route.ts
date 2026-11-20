@@ -9,7 +9,10 @@ export const dynamic = "force-dynamic";
 /** All categories (public) with the number of products currently using each name. */
 export const CATEGORY_LIST_SQL = `
   select c.*,
-         (select count(*)::int from public.products p where lower(trim(p.category)) = lower(c.name)) as product_count
+         (select count(*)::int from public.products p where lower(trim(p.category)) = lower(c.name)) as product_count,
+         (select p.cover_image_url from public.products p
+            where lower(trim(p.category)) = lower(c.name) and coalesce(p.cover_image_url, '') <> ''
+            order by p.published desc, p.updated_at desc limit 1) as cover_image_url
   from public.product_categories c
   order by c.sort_order, c.name`;
 

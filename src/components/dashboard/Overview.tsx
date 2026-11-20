@@ -63,7 +63,7 @@ const Overview = ({ navigate }: { navigate: (hash: string) => void }) => {
       <div className="space-y-6 p-6">
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           <Stat label="Products" value={products.length} onClick={() => navigate("/products")} />
-          <Stat label="Categories" value={categories} onClick={() => navigate("/products")} />
+          <Stat label="Categories" value={categories} onClick={() => navigate("/categories")} />
           <Stat label="Blog posts" value={posts.length} onClick={() => navigate("/blogs")} />
           <Stat label="Drafts" value={drafts.length} />
         </div>

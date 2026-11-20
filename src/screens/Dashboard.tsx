@@ -275,7 +275,7 @@ const DashboardPage = () => {
           {route.section === "products" ? <ProductManager key={`p-${route.id ?? "list"}`} {...sectionProps} /> : null}
           {route.section === "blogs" ? <BlogManager key={`b-${route.id ?? "list"}`} {...sectionProps} /> : null}
           {route.section === "pages" ? <PageManager key={`g-${route.id ?? "list"}`} {...sectionProps} /> : null}
-          {route.section === "categories" ? <CategoryManager /> : null}
+          {route.section === "categories" ? <CategoryManager key={`c-${route.id ?? "list"}`} {...sectionProps} /> : null}
           {route.section === "media" ? <MediaLibrary /> : null}
         </main>
       </div>
