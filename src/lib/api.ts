@@ -37,6 +37,8 @@ export type ProductRecord = {
   gallery_image_urls: string[];
   faqs?: Array<{ q: string; a: string }>;
   video_url: string | null;
+  product_code?: string | null;
+  size?: string | null;
   published: boolean;
   created_at: string;
   updated_at: string;

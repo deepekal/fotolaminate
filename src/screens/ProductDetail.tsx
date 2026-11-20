@@ -118,6 +118,12 @@ const ProductDetailPage = ({
                 <h1 className="mb-3 font-display text-4xl font-bold leading-tight text-primary-foreground md:text-5xl">
                   {product.name}
                 </h1>
+                {product.size || product.product_code ? (
+                  <div className="mb-3 flex flex-wrap gap-2 text-sm">
+                    {product.size ? <span className="rounded-md bg-primary-foreground/15 px-2.5 py-1 font-semibold text-primary-foreground">Size: {product.size}</span> : null}
+                    {product.product_code ? <span className="rounded-md bg-primary-foreground/10 px-2.5 py-1 font-mono text-primary-foreground/80">ID {product.product_code}</span> : null}
+                  </div>
+                ) : null}
                 <p className="text-sm leading-relaxed text-primary-foreground/75">
                   {product.summary ?? ""}
                 </p>

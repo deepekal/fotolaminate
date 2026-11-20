@@ -8,6 +8,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { api, ProductRecord } from "@/lib/api";
 import { toast } from "sonner";
 import { slugifyCategory } from "@/lib/slug";
+import CategoryProductTable from "@/components/CategoryProductTable";
 import coldImg from "@/assets/product-cold.jpg";
 import hotImg from "@/assets/product-hot.jpg";
 import rollImg from "@/assets/product-roll.jpg";
@@ -47,6 +48,9 @@ const ProductCard = ({ product }: { product: ProductRecord }) => (
       />
     </div>
     <div className="flex flex-1 flex-col border-t border-border p-4">
+      {product.size ? (
+        <span className="mb-1.5 self-start rounded-md bg-primary/10 px-2 py-0.5 text-xs font-bold text-primary">{product.size}</span>
+      ) : null}
       <h3 className="mb-1 font-display text-base font-bold leading-snug text-foreground transition-colors group-hover:text-accent">
         {product.name}
       </h3>
@@ -277,6 +281,9 @@ const ProductsPage = ({ initialProducts = [] }: ProductsPageProps) => {
                       <ProductCard key={p.id} product={p} />
                     ))}
                   </div>
+                  {activeCategory !== ALL ? (
+                    <CategoryProductTable category={category} products={list} fallbackImage={getCategoryFallback(category)} />
+                  ) : null}
                 </section>
               ))}
             </div>

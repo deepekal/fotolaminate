@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { PRODUCT_LIST_COLUMNS } from "@server/lib/product-columns";
 import { query } from "@server/lib/db";
 import { isAdminRequest, jsonError, pgToResponse, requireAdmin } from "@server/lib/route-helpers";
+import { normalizeProductCode } from "@/lib/product-table";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -32,9 +33,9 @@ export async function POST(req: Request) {
       `insert into public.products
         (name, slug, category, summary, description, features, specs,
          meta_title, meta_description, keywords,
-         cover_image_url, og_image_url, gallery_image_urls, faqs, published, video_url)
+         cover_image_url, og_image_url, gallery_image_urls, faqs, published, video_url, product_code, size)
        values
-        ($1,$2,$3,$4,$5,$6,$7::jsonb,$8,$9,$10,$11,$12,$13,$14::jsonb,$15,$16)
+        ($1,$2,$3,$4,$5,$6,$7::jsonb,$8,$9,$10,$11,$12,$13,$14::jsonb,$15,$16,$17,$18)
        returning *`,
       [
         String(body.name),
@@ -53,11 +54,15 @@ export async function POST(req: Request) {
         JSON.stringify(Array.isArray(body.faqs) ? body.faqs : []),
         body.published === false ? false : true,
         body.video_url ? String(body.video_url) : null,
+        normalizeProductCode(body.product_code),
+        typeof body.size === "string" && body.size.trim() ? body.size.trim() : null,
       ],
     );
 
     return NextResponse.json(r.rows[0], { status: 201 });
   } catch (e) {
+    if (typeof e === "object" && e !== null && (e as { code?: string }).code === "23505" && String((e as { constraint?: string }).constraint ?? "").includes("product_code"))
+      return jsonError(409, "That Product ID is already used by another product");
     const msg = e instanceof Error ? e.message : "Failed to create product";
     if (msg.includes("duplicate key") || msg.includes("unique")) return jsonError(409, "Slug already exists");
     return pgToResponse(e);

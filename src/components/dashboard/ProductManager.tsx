@@ -51,6 +51,8 @@ type ProductDraft = {
   metaDescription: string;
   keywordString: string;
   published: boolean;
+  productCode: string;
+  size: string;
 };
 
 function splitCommaList(input: string) {
@@ -78,6 +80,8 @@ function emptyDraft(): ProductDraft {
     metaDescription: "",
     keywordString: "",
     published: true,
+    productCode: "",
+    size: "",
   };
 }
 
@@ -154,6 +158,8 @@ function toDraft(r: ProductRecord): ProductDraft {
     metaDescription: r.meta_description ?? "",
     keywordString: normaliseFeatures(r.keywords).join(", "),
     published: r.published ?? true,
+    productCode: r.product_code ?? "",
+    size: r.size ?? "",
   };
 }
 
@@ -176,6 +182,8 @@ function recordToPayload(r: ProductRecord, overrides: Partial<ProductRecord> = {
     gallery_image_urls: normaliseFeatures(r.gallery_image_urls),
     faqs: Array.isArray(r.faqs) ? r.faqs : [],
     video_url: r.video_url,
+    product_code: r.product_code ?? null,
+    size: r.size ?? null,
     published: r.published,
     ...overrides,
   };
@@ -226,7 +234,7 @@ const ProductManager = ({ routeId, navigate, onDirtyChange }: SectionProps) => {
       (p) =>
         (status === "all" || (status === "published") === p.published) &&
         (!category || (p.category ?? "") === category) &&
-        (!q || p.name.toLowerCase().includes(q) || p.slug.toLowerCase().includes(q) || (p.category ?? "").toLowerCase().includes(q)),
+        (!q || p.name.toLowerCase().includes(q) || p.slug.toLowerCase().includes(q) || (p.category ?? "").toLowerCase().includes(q) || (p.product_code ?? "").toLowerCase().includes(q)),
     );
   }, [products, search, status, category]);
 
@@ -304,6 +312,8 @@ const ProductManager = ({ routeId, navigate, onDirtyChange }: SectionProps) => {
         gallery_image_urls: splitCommaList(draft.galleryUrls),
         faqs,
         video_url: draft.videoUrl.trim() || null,
+        product_code: draft.productCode.trim() || null,
+        size: draft.size.trim() || null,
         published: draft.published,
       };
 
@@ -403,7 +413,7 @@ const ProductManager = ({ routeId, navigate, onDirtyChange }: SectionProps) => {
         <AdminTable
           rows={rows}
           loading={loading}
-          columns={[{ label: "Product" }, { label: "Category", className: "w-56" }, { label: "Status", className: "w-28" }, { label: "Updated", className: "w-32" }]}
+          columns={[{ label: "Product" }, { label: "ID", className: "w-24" }, { label: "Size", className: "w-32" }, { label: "Category", className: "w-52" }, { label: "Status", className: "w-28" }, { label: "Updated", className: "w-32" }]}
           emptyText={products.length === 0 ? "No products yet." : "No products match these filters."}
           statusCounts={counts}
           status={status}
@@ -439,6 +449,8 @@ const ProductManager = ({ routeId, navigate, onDirtyChange }: SectionProps) => {
                   { label: "Delete", danger: true, onClick: () => void removeProduct(p) },
                 ]}
               />
+              <td className="py-2.5 pr-4 font-mono text-xs text-slate-700">{p.product_code || <span className="text-slate-400">—</span>}</td>
+              <td className="py-2.5 pr-4 text-slate-600">{p.size || <span className="text-slate-400">—</span>}</td>
               <td className="py-2.5 pr-4 text-slate-600">{p.category || <span className="text-slate-400">—</span>}</td>
               <td className="py-2.5 pr-4">
                 <StatusBadge published={p.published} />
@@ -562,6 +574,14 @@ const ProductManager = ({ routeId, navigate, onDirtyChange }: SectionProps) => {
                   : undefined
               }
             />
+            <MetaBox title="Product ID & size">
+              <Field label="Product ID" hint="Short code shown in the category table, e.g. CM-01. Must be unique.">
+                <input value={draft.productCode} onChange={(e) => update("productCode", e.target.value.toUpperCase())} maxLength={20} className={`${inputCls} font-mono uppercase`} placeholder="CM-01" />
+              </Field>
+              <Field label="Size" hint="Working size or capacity, e.g. 45°, 12 inch, 2 ft x 4 ft.">
+                <input value={draft.size} onChange={(e) => update("size", e.target.value)} maxLength={60} className={inputCls} placeholder="12 inch" />
+              </Field>
+            </MetaBox>
             <MetaBox title="Category">
               <select value={draft.category} onChange={(e) => update("category", e.target.value)} className={inputCls} aria-label="Product category">
                 <option value="">— No category —</option>

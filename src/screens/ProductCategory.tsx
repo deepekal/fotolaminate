@@ -4,6 +4,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { api, type ProductRecord } from "@/lib/api";
 import { slugifyCategory } from "@/lib/slug";
+import CategoryProductTable from "@/components/CategoryProductTable";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -160,6 +161,7 @@ const ProductCategoryPage = ({
                       />
                     </div>
                     <div className="p-5">
+                      {p.size ? <span className="mb-2 inline-block rounded-md bg-primary/10 px-2 py-0.5 text-xs font-bold text-primary">{p.size}</span> : null}
                       <h2 className="mb-2 font-display text-lg font-bold text-foreground">{p.name}</h2>
                       <p className="mb-4 text-sm text-muted-foreground">{p.summary ?? ""}</p>
                       <div className="inline-block font-display text-sm font-semibold text-accent transition-colors group-hover:text-accent/80">
@@ -170,6 +172,9 @@ const ProductCategoryPage = ({
                 ))}
               </div>
             )}
+            {!loading && products.length > 0 ? (
+              <CategoryProductTable category={categoryName} products={products} fallbackImage={getCategoryFallback(products[0]?.category)} />
+            ) : null}
           </div>
         </section>
       </main>

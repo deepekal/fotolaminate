@@ -92,3 +92,8 @@ create table if not exists public.product_categories (
 );
 create unique index if not exists product_categories_name_key on public.product_categories (lower(name));
 create unique index if not exists product_categories_slug_key on public.product_categories (slug);
+
+-- Product code + size (category table)
+alter table public.products add column if not exists product_code text;
+alter table public.products add column if not exists size text;
+create unique index if not exists products_product_code_key on public.products (upper(product_code)) where product_code is not null;

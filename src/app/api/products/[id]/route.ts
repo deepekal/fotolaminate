@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { query } from "@server/lib/db";
 import { jsonError, pgToResponse, requireAdmin } from "@server/lib/route-helpers";
+import { normalizeProductCode } from "@/lib/product-table";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -41,7 +42,9 @@ export async function PUT(req: NextRequest, ctx: { params: Promise<{ id: string 
           gallery_image_urls = $14,
           faqs = $15::jsonb,
           published = $16,
-          video_url = $17
+          video_url = $17,
+          product_code = $18,
+          size = $19
        where id = $1
        returning *`,
       [
@@ -62,12 +65,16 @@ export async function PUT(req: NextRequest, ctx: { params: Promise<{ id: string 
         JSON.stringify(faqsJson),
         body.published === false ? false : true,
         body.video_url ? String(body.video_url) : null,
+        normalizeProductCode(body.product_code),
+        typeof body.size === "string" && body.size.trim() ? body.size.trim() : null,
       ],
     );
 
     if (!r.rows[0]) return jsonError(404, "Product not found");
     return NextResponse.json(r.rows[0]);
   } catch (e) {
+    if (typeof e === "object" && e !== null && (e as { code?: string }).code === "23505" && String((e as { constraint?: string }).constraint ?? "").includes("product_code"))
+      return jsonError(409, "That Product ID is already used by another product");
     const msg = e instanceof Error ? e.message : "Failed to update product";
     if (msg.includes("duplicate key") || msg.includes("unique")) return jsonError(409, "Slug already exists");
     return pgToResponse(e);
