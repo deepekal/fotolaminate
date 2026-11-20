@@ -147,8 +147,7 @@ on conflict do nothing;
 ### Task 6: Public consumers read from the table
 
 **Files:**
-- Modify: `src/components/Footer.tsx:20-29` (accept `categories: { name: string; slug: string }[]` prop, fallback to the current constant when empty)
-- Modify: the server component that renders `<Footer />` (find with `grep -rn "<Footer" src`) to fetch `select name, slug from public.product_categories order by sort_order, name` via `query` in a `try/catch` and pass it.
+- Modify: `src/components/Footer.tsx:20-29` — Footer is a client component rendered by many screens (Index, Contact, Awards…), so load `api.categories.list()` in a `useEffect` with the current constant as initial state; render `name` + `/products/category/${slug}`.
 - Modify: `src/components/Contact.tsx:94-105` → options from `api.categories.list()` loaded in `useEffect`, static list kept as initial state.
 - Modify: `src/app/products/category/[categorySlug]/page.tsx:17-22` → look up `select name from product_categories where slug=$1` first, fall back to the existing distinct-products scan.
 
