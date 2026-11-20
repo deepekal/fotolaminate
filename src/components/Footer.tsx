@@ -2,7 +2,9 @@
 
 import { Phone, Mail, MapPin, Facebook, Youtube, Instagram, Linkedin, Twitter } from "lucide-react";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { slugifyCategory } from "@/lib/slug";
+import { api } from "@/lib/api";
 
 const exploreLinks = [
   { label: "Home", href: "/" },
@@ -17,8 +19,8 @@ const exploreLinks = [
   { label: "Contact us", href: "/contact" },
 ];
 
-// Real product categories (must match the product "Category" values in the CMS).
-const productCategories = [
+// Fallback list used until the managed categories (Dashboard → Categories) have loaded.
+const fallbackCategories = [
   "Cold Lamination Machine",
   "Thermal Lamination Machine",
   "UV Coating Machine",
@@ -43,7 +45,20 @@ const FooterHeading = ({ children }: { children: React.ReactNode }) => (
   <h3 className="mb-4 font-display text-lg font-bold text-primary-foreground">{children}</h3>
 );
 
-const Footer = () => (
+const Footer = () => {
+  const [productCategories, setProductCategories] = useState<{ name: string; slug: string }[]>(() =>
+    fallbackCategories.map((name) => ({ name, slug: slugifyCategory(name) })),
+  );
+  useEffect(() => {
+    api.categories
+      .list()
+      .then((list) => {
+        if (list.length) setProductCategories(list.map((c) => ({ name: c.name, slug: c.slug })));
+      })
+      .catch(() => {});
+  }, []);
+
+  return (
   <footer className="bg-[hsl(213_62%_13%)] text-primary-foreground">
     {/* Thin brand rule across the top edge */}
     <div className="h-1 gradient-accent" aria-hidden="true" />
@@ -101,9 +116,9 @@ const Footer = () => (
           <FooterHeading>Machines</FooterHeading>
           <ul className="space-y-2.5">
             {productCategories.map((c) => (
-              <li key={c}>
-                <Link href={`/products/category/${slugifyCategory(c)}`} className={linkClass}>
-                  {c}
+              <li key={c.slug}>
+                <Link href={`/products/category/${c.slug}`} className={linkClass}>
+                  {c.name}
                 </Link>
               </li>
             ))}
@@ -177,6 +192,7 @@ const Footer = () => (
       </div>
     </div>
   </footer>
-);
+  );
+};
 
 export default Footer;

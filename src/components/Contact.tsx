@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { api } from "@/lib/api";
 import { motion } from "framer-motion";
 import { Phone, Mail, MapPin, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
@@ -10,11 +11,34 @@ type ContactProps = {
   description?: string;
 };
 
+// Fallback until the managed categories (Dashboard → Categories) load.
+const fallbackMachineTypes = [
+  "Cold Lamination Machine",
+  "Canvera Photo Album Making Machine",
+  "Karizma Photo Album Making Machine",
+  "Photo Frame Cutting Machine",
+  "Hot Gluing Machine",
+  "Grooving Machine",
+  "UV Coating Machine",
+  "Round Corner Cutter Machine",
+  "PVC Cold Lamination Roll",
+  "Machine Accessories & Raw Materials",
+];
+
 const Contact = ({
   title = "Contact & Inquiry",
   description = "Share your requirement and we will respond with pricing, specifications, or service guidance.",
 }: ContactProps) => {
   const [form, setForm] = useState({ name: "", phone: "", email: "", machineType: "", message: "" });
+  const [machineTypes, setMachineTypes] = useState<string[]>(fallbackMachineTypes);
+  useEffect(() => {
+    api.categories
+      .list()
+      .then((list) => {
+        if (list.length) setMachineTypes(list.map((c) => c.name));
+      })
+      .catch(() => {});
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -92,16 +116,11 @@ const Contact = ({
               className="w-full rounded-md border border-border bg-muted px-4 py-3 text-sm text-foreground focus:border-accent focus:outline-none"
             >
               <option value="">Select Machine Type</option>
-              <option>Cold Lamination Machine</option>
-              <option>Canvera Photo Album Making Machine</option>
-              <option>Karizma Photo Album Making Machine</option>
-              <option>Photo Frame Cutting Machine</option>
-              <option>Hot Gluing Machine</option>
-              <option>Grooving Machine</option>
-              <option>UV Coating Machine</option>
-              <option>Round Corner Cutter Machine</option>
-              <option>PVC Cold Lamination Roll</option>
-              <option>Machine Accessories &amp; Raw Materials</option>
+              {machineTypes.map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
             </select>
             <textarea
               placeholder="Your Message"

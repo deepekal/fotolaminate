@@ -6,6 +6,14 @@ import { slugifyCategory } from "@/lib/slug";
 
 export const runtime = "nodejs";
 
+/** Managed category name for a slug (Dashboard → Categories), falling back to names used on published products. */
+async function findCategoryName(categorySlug: string): Promise<string | null> {
+  const managed = await query<{ name: string }>("select name from public.product_categories where slug = $1", [categorySlug]);
+  if (managed.rows[0]) return managed.rows[0].name;
+  const r = await query<{ category: string | null }>("select distinct category from public.products where published = true");
+  return r.rows.map((row) => row.category).find((c): c is string => !!c && slugifyCategory(c) === categorySlug) ?? null;
+}
+
 export async function generateMetadata({
   params,
 }: {
@@ -14,12 +22,7 @@ export async function generateMetadata({
   const { categorySlug } = await params;
 
   try {
-    const r = await query<{ category: string | null }>(
-      "select distinct category from public.products where published = true"
-    );
-
-    const categories = r.rows.map((row) => row.category).filter((c): c is string => !!c);
-    const category = categories.find((c) => slugifyCategory(c) === categorySlug) || null;
+    const category = await findCategoryName(categorySlug);
 
     if (!category) {
       return {
@@ -80,9 +83,7 @@ export default async function Page({
       (p) => p.category && slugifyCategory(p.category) === categorySlug
     );
     initialProducts = matched;
-    if (matched.length > 0 && matched[0].category) {
-      categoryName = matched[0].category;
-    }
+    categoryName = (await findCategoryName(categorySlug)) ?? matched[0]?.category ?? "";
   } catch {}
 
   return (
