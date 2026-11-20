@@ -30,3 +30,10 @@ describe("categorySelectOptions", () => {
     expect(categorySelectOptions(["A"], "")).toEqual(["A"]);
   });
 });
+
+describe("categorySelectOptions with padded legacy values", () => {
+  it("appends the value exactly as stored so the select can match it", async () => {
+    const { categorySelectOptions } = await import("@/lib/categories");
+    expect(categorySelectOptions(["A"], " Old ")).toEqual(["A", " Old "]);
+  });
+});

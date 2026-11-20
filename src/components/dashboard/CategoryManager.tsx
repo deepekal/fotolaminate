@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Loader2, Plus } from "lucide-react";
 import { toast } from "sonner";
-import { api, type CategoryRecord } from "@/lib/api";
+import { api, ApiError, type CategoryRecord } from "@/lib/api";
 import { AdminTable, Field, PageTitle, Panel, btnPrimary, btnSecondary, formatDate, inputBase, inputCls, textareaCls } from "@/components/dashboard/admin-ui";
 import { useConfirm } from "@/components/dashboard/confirm";
 
@@ -81,9 +81,13 @@ const CategoryManager = () => {
       toast.success("Category deleted");
       await refresh();
     } catch (e) {
-      const count = c.product_count ?? 0;
-      if (count > 0) setMoving({ cat: c, count, target: items.find((o) => o.id !== c.id)?.id ?? "" });
-      else toast.error(e instanceof Error ? e.message : "Could not delete category");
+      if (e instanceof ApiError && e.status === 409) {
+        const count = Number(e.body?.product_count ?? c.product_count ?? 0);
+        setMoving({ cat: c, count, target: items.find((o) => o.id !== c.id)?.id ?? "" });
+        return;
+      }
+      toast.error(e instanceof Error ? e.message : "Could not delete category");
+      await refresh();
     }
   }
 
@@ -92,6 +96,7 @@ const CategoryManager = () => {
     try {
       const r = await api.categories.remove(moving.cat.id, moving.target);
       toast.success(`Moved ${r.moved} product${r.moved === 1 ? "" : "s"} and deleted the category`);
+      if (editing && editing !== "new" && editing.id === moving.cat.id) setEditing(null);
       setMoving(null);
       await refresh();
     } catch (e) {

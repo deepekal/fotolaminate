@@ -69,6 +69,18 @@ function getAdminToken(): string | null {
   }
 }
 
+/** Error thrown by apiFetch for non-2xx responses; carries the HTTP status and parsed JSON body (if any). */
+export class ApiError extends Error {
+  status: number;
+  body: Record<string, unknown> | null;
+  constructor(message: string, status: number, body: Record<string, unknown> | null) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+    this.body = body;
+  }
+}
+
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const adminToken = getAdminToken();
 
@@ -90,26 +102,23 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
     const looksLikeHtml = /text\/html/i.test(contentType) || /^\s*</.test(text);
     if (looksLikeHtml) {
       message = `Request failed: ${res.status} (received HTML instead of JSON). Check your API deployment and/or set NEXT_PUBLIC_API_BASE_URL.`;
-      throw new Error(message);
+      throw new ApiError(message, res.status, null);
     }
 
+    let body: Record<string, unknown> | null = null;
     if (text) {
       try {
         const parsed: unknown = JSON.parse(text);
-        if (
-          typeof parsed === "object" &&
-          parsed !== null &&
-          "error" in parsed &&
-          typeof (parsed as { error?: unknown }).error === "string"
-        ) {
-          message = (parsed as { error: string }).error;
+        if (typeof parsed === "object" && parsed !== null) {
+          body = parsed as Record<string, unknown>;
+          if (typeof body.error === "string") message = body.error;
         }
       } catch {
         // ignore JSON parsing errors
       }
     }
 
-    throw new Error(message);
+    throw new ApiError(message, res.status, body);
   }
 
   if (!text) {

@@ -79,11 +79,15 @@ export default async function Page({
       `select ${PRODUCT_LIST_COLUMNS} from public.products where published = true order by created_at desc`
     );
     const published = res.rows;
+    const managedName = await findCategoryName(categorySlug);
     const matched = published.filter(
-      (p) => p.category && slugifyCategory(p.category) === categorySlug
+      (p) =>
+        p.category &&
+        (slugifyCategory(p.category) === categorySlug ||
+          (managedName !== null && p.category.trim().toLowerCase() === managedName.toLowerCase()))
     );
     initialProducts = matched;
-    categoryName = (await findCategoryName(categorySlug)) ?? matched[0]?.category ?? "";
+    categoryName = managedName ?? matched[0]?.category ?? "";
   } catch {}
 
   return (

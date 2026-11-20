@@ -91,3 +91,4 @@ create table if not exists public.product_categories (
   updated_at timestamptz not null default now()
 );
 create unique index if not exists product_categories_name_key on public.product_categories (lower(name));
+create unique index if not exists product_categories_slug_key on public.product_categories (slug);

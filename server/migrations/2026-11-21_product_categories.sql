@@ -24,7 +24,7 @@ on conflict do nothing;
 
 insert into public.product_categories (name, slug, sort_order)
 select distinct on (lower(trim(category))) trim(category),
-       left(regexp_replace(regexp_replace(lower(replace(trim(category),'&',' and ')),'[^a-z0-9]+','-','g'),'(^-+|-+$)','','g'),80),
+       left(regexp_replace(regexp_replace(regexp_replace(lower(replace(trim(category),'&',' and ')),'[''"]','','g'),'[^a-z0-9]+','-','g'),'(^-+|-+$)','','g'),80),
        100
 from public.products
 where coalesce(trim(category),'') <> ''
