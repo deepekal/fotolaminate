@@ -1,3 +1,6 @@
+import type { CategoryRecord } from "@/lib/categories";
+export type { CategoryRecord } from "@/lib/categories";
+
 export type BlogPostRecord = {
   id: string;
   title: string;
@@ -155,6 +158,18 @@ export const api = {
     update: (id: string, payload: Partial<ProductRecord>) =>
       apiFetch<ProductRecord>(`/api/products/${encodeURIComponent(id)}`, { method: "PUT", body: JSON.stringify(payload) }),
     remove: (id: string) => apiFetch<{ ok: true }>(`/api/products/${encodeURIComponent(id)}`, { method: "DELETE" }),
+  },
+  categories: {
+    list: () => apiFetch<CategoryRecord[]>("/api/categories"),
+    create: (payload: { name: string; description?: string; sort_order?: number }) =>
+      apiFetch<CategoryRecord>("/api/categories", { method: "POST", body: JSON.stringify(payload) }),
+    update: (id: string, payload: { name?: string; description?: string; sort_order?: number }) =>
+      apiFetch<CategoryRecord>(`/api/categories/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(payload) }),
+    remove: (id: string, moveTo?: string) =>
+      apiFetch<{ ok: true; moved: number }>(
+        `/api/categories/${encodeURIComponent(id)}${moveTo ? `?moveTo=${encodeURIComponent(moveTo)}` : ""}`,
+        { method: "DELETE" },
+      ),
   },
   pages: {
     list: () => apiFetch<PageContent[]>("/api/pages"),
