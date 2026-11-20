@@ -5,6 +5,7 @@ import Footer from "@/components/Footer";
 import { api, type ProductRecord } from "@/lib/api";
 import { slugifyCategory } from "@/lib/slug";
 import CategoryProductTable from "@/components/CategoryProductTable";
+import { compareProductCode } from "@/lib/product-table";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -78,6 +79,7 @@ const ProductCategoryPage = ({
         } else {
           sorted.sort((a, b) => getNum(b.name) - getNum(a.name));
         }
+        sorted.sort(compareProductCode); // Product ID order first (stable), uncoded keep the order above
 
         if (active) setProducts(sorted);
       } catch (e) {

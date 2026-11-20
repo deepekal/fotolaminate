@@ -9,6 +9,7 @@ import { api, ProductRecord } from "@/lib/api";
 import { toast } from "sonner";
 import { slugifyCategory } from "@/lib/slug";
 import CategoryProductTable from "@/components/CategoryProductTable";
+import { compareProductCode } from "@/lib/product-table";
 import coldImg from "@/assets/product-cold.jpg";
 import hotImg from "@/assets/product-hot.jpg";
 import rollImg from "@/assets/product-roll.jpg";
@@ -124,6 +125,9 @@ const ProductsPage = ({ initialProducts = [] }: ProductsPageProps) => {
       } else {
         list.sort((a, b) => a.name.localeCompare(b.name));
       }
+      // Owner-defined order: products with a Product ID (e.g. CM-01) come first, in code order;
+      // the rest keep the order above (stable sort).
+      list.sort(compareProductCode);
     }
 
     return entries;

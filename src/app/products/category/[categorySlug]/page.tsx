@@ -3,6 +3,7 @@ import ProductCategoryPage from "@/screens/ProductCategory";
 import type { Metadata } from "next";
 import { query } from "@server/lib/db";
 import { slugifyCategory } from "@/lib/slug";
+import { compareProductCode } from "@/lib/product-table";
 
 export const runtime = "nodejs";
 
@@ -86,7 +87,7 @@ export default async function Page({
         (slugifyCategory(p.category) === categorySlug ||
           (managedName !== null && p.category.trim().toLowerCase() === managedName.toLowerCase()))
     );
-    initialProducts = matched;
+    initialProducts = matched.sort(compareProductCode);
     categoryName = managedName ?? matched[0]?.category ?? "";
   } catch {}
 
