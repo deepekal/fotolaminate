@@ -18,3 +18,15 @@ describe("normalizeCategoryName", () => {
     expect(normalizeCategoryName(5).ok).toBe(false);
   });
 });
+
+describe("categorySelectOptions", () => {
+  it("keeps a legacy product value that is not in the table", async () => {
+    const { categorySelectOptions } = await import("@/lib/categories");
+    expect(categorySelectOptions(["A", "B"], "Old")).toEqual(["A", "B", "Old"]);
+  });
+  it("does not duplicate a value already in the table or add blanks", async () => {
+    const { categorySelectOptions } = await import("@/lib/categories");
+    expect(categorySelectOptions(["A", "B"], "B")).toEqual(["A", "B"]);
+    expect(categorySelectOptions(["A"], "")).toEqual(["A"]);
+  });
+});

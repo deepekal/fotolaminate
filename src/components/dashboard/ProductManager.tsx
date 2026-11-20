@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { api, ProductRecord } from "@/lib/api";
+import { categorySelectOptions } from "@/lib/categories";
 import { slugify } from "@/lib/slug";
 import { toast } from "sonner";
 import {
@@ -196,7 +197,10 @@ const ProductManager = ({ routeId, navigate, onDirtyChange }: SectionProps) => {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<"all" | "published" | "draft">("all");
   const [category, setCategory] = useState("");
-  const [newCategory, setNewCategory] = useState<string | null>(null);
+  const [managedCategories, setManagedCategories] = useState<string[]>([]);
+  useEffect(() => {
+    api.categories.list().then((list) => setManagedCategories(list.map((c) => c.name))).catch(() => setManagedCategories([]));
+  }, []);
 
   const editing = routeId !== undefined;
   const selectedProduct = useMemo(() => (routeId && routeId !== "new" ? products.find((p) => p.id === routeId) ?? null : null), [products, routeId]);
@@ -246,7 +250,6 @@ const ProductManager = ({ routeId, navigate, onDirtyChange }: SectionProps) => {
   useEffect(() => {
     if (routeId === "new") setDraft(emptyDraft());
     else if (selectedProduct) setDraft(toDraft(selectedProduct));
-    setNewCategory(null);
   }, [routeId, selectedProduct]);
 
   function update<K extends keyof ProductDraft>(key: K, value: ProductDraft[K]) {
@@ -468,7 +471,7 @@ const ProductManager = ({ routeId, navigate, onDirtyChange }: SectionProps) => {
     );
   }
 
-  const categoryOptions = draft.category && !categories.includes(draft.category) ? [...categories, draft.category] : categories;
+  const categoryOptions = categorySelectOptions(managedCategories.length ? managedCategories : categories, draft.category);
 
   return (
     <>
@@ -560,48 +563,17 @@ const ProductManager = ({ routeId, navigate, onDirtyChange }: SectionProps) => {
               }
             />
             <MetaBox title="Category">
-              <div className="max-h-56 space-y-1.5 overflow-y-auto pr-1">
+              <select value={draft.category} onChange={(e) => update("category", e.target.value)} className={inputCls} aria-label="Product category">
+                <option value="">— No category —</option>
                 {categoryOptions.map((c) => (
-                  <label key={c} className="flex cursor-pointer items-center gap-2 text-slate-700">
-                    <input type="radio" name="product-category" checked={draft.category === c} onChange={() => update("category", c)} />
+                  <option key={c} value={c}>
                     {c}
-                  </label>
+                  </option>
                 ))}
-                {categoryOptions.length === 0 ? <p className="text-slate-500">No categories yet.</p> : null}
-              </div>
-              {newCategory === null ? (
-                <button type="button" onClick={() => setNewCategory("")} className="text-sm font-medium text-accent hover:underline">
-                  + New category
-                </button>
-              ) : (
-                <div className="flex gap-2">
-                  <input
-                    value={newCategory}
-                    onChange={(e) => setNewCategory(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && newCategory.trim()) {
-                        update("category", newCategory.trim());
-                        setNewCategory(null);
-                      }
-                    }}
-                    autoFocus
-                    className={`${inputCls} h-9`}
-                    placeholder="Category name"
-                    aria-label="New category name"
-                  />
-                  <button
-                    type="button"
-                    disabled={!newCategory.trim()}
-                    onClick={() => {
-                      update("category", newCategory.trim());
-                      setNewCategory(null);
-                    }}
-                    className="text-sm font-medium text-accent hover:underline disabled:opacity-40"
-                  >
-                    Add
-                  </button>
-                </div>
-              )}
+              </select>
+              <button type="button" onClick={() => navigate("/categories")} className="text-sm font-medium text-accent hover:underline">
+                Manage categories
+              </button>
             </MetaBox>
             <MetaBox title="Main image">
               <ImageBox value={draft.coverImageUrl} onChange={(v) => update("coverImageUrl", v)} emptyHint="Drop the product photo here, or use Upload below" />

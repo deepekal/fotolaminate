@@ -4,10 +4,11 @@ import BlogManager from "@/components/dashboard/BlogManager";
 import PageManager from "@/components/dashboard/PageManager";
 import ProductManager from "@/components/dashboard/ProductManager";
 import MediaLibrary from "@/components/dashboard/MediaLibrary";
+import CategoryManager from "@/components/dashboard/CategoryManager";
 import Overview from "@/components/dashboard/Overview";
 import { ConfirmProvider } from "@/components/dashboard/confirm";
 import { btnPrimary, inputCls } from "@/components/dashboard/admin-ui";
-import { Eye, EyeOff, ExternalLink, FileText, Images, LayoutDashboard, LayoutTemplate, Loader2, LogOut, Menu, Package, X } from "lucide-react";
+import { Eye, EyeOff, ExternalLink, FileText, Images, LayoutDashboard, LayoutTemplate, Loader2, LogOut, Menu, Package, Tags, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "@/lib/api";
 
@@ -16,6 +17,7 @@ const ADMIN_TOKEN_STORAGE_KEY = "admin_token";
 const sections = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
   { id: "products", label: "Products", icon: Package },
+  { id: "categories", label: "Categories", icon: Tags },
   { id: "blogs", label: "Blog posts", icon: FileText },
   { id: "pages", label: "Pages", icon: LayoutTemplate },
   { id: "media", label: "Media library", icon: Images },
@@ -273,6 +275,7 @@ const DashboardPage = () => {
           {route.section === "products" ? <ProductManager key={`p-${route.id ?? "list"}`} {...sectionProps} /> : null}
           {route.section === "blogs" ? <BlogManager key={`b-${route.id ?? "list"}`} {...sectionProps} /> : null}
           {route.section === "pages" ? <PageManager key={`g-${route.id ?? "list"}`} {...sectionProps} /> : null}
+          {route.section === "categories" ? <CategoryManager /> : null}
           {route.section === "media" ? <MediaLibrary /> : null}
         </main>
       </div>

@@ -22,3 +22,9 @@ export function normalizeCategoryName(
   if (name.length > CATEGORY_NAME_MAX) return { ok: false, error: `Name must be ${CATEGORY_NAME_MAX} characters or fewer` };
   return { ok: true, name, slug: slugifyCategory(name) };
 }
+
+/** Options for the product editor's category select: the managed names plus the product's current value if it is not one of them. */
+export function categorySelectOptions(tableNames: string[], current: string): string[] {
+  const cur = current.trim();
+  return cur && !tableNames.includes(cur) ? [...tableNames, cur] : tableNames;
+}
