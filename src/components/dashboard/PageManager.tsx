@@ -12,6 +12,7 @@ import {
   Field,
   ImageBox,
   JsonListEditor,
+  MetaBox,
   PageTitle,
   Panel,
   PublishBox,
@@ -19,19 +20,20 @@ import {
   TitleCell,
   btnGhost,
   btnSecondary,
+  formatDate,
   inputCls,
   textareaCls,
   useSaveShortcut,
   useUnloadWarning,
 } from "@/components/dashboard/admin-ui";
-import { Loader2, Plus, RefreshCw, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, HelpCircle, Image as ImageIcon, Loader2, RefreshCw, Search, Settings2, Type, X } from "lucide-react";
 import { useConfirm } from "@/components/dashboard/confirm";
 
 type DraftSection = Omit<PageSection, 'faqs'> & {
   faqs?: string[];
 };
 
-type PageDraft = Omit<PageContent, 'schemas' | 'faqs' | 'sections'> & {
+type PageDraft = Omit<PageContent, 'schemas' | 'faqs' | 'sections' | 'updatedAt'> & {
   keywordString: string;
   schemas: string[];
   faqs: string[];
@@ -67,6 +69,20 @@ function toDraft(page: PageContent): PageDraft {
   };
 }
 
+function firstImage(page: PageContent): string | null {
+  for (const sec of page.sections) for (const f of sec.fields ?? []) if (f.key === "image" && f.value) return f.value;
+  return null;
+}
+
+function seoBadge(page: PageContent) {
+  const t = page.seo.title.trim().length;
+  const d = page.seo.description.trim().length;
+  const ok = t >= 30 && t <= 65 && d >= 100 && d <= 170;
+  const missing = t === 0 || d === 0;
+  const cls = missing ? "bg-red-50 text-red-700" : ok ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700";
+  return <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${cls}`}>{missing ? "Missing" : ok ? "Good" : "Check"}</span>;
+}
+
 type SectionProps = {
   routeId?: string;
   navigate: (hash: string) => void;
@@ -81,6 +97,8 @@ const PageManager = ({ routeId, navigate, onDirtyChange }: SectionProps) => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
+  const [tab, setTab] = useState<"content" | "seo" | "faqs" | "advanced">("content");
+  const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
 
   const selectedPage = useMemo(
     () => pages.find((page) => page.pageId === selectedId) ?? null,
@@ -322,9 +340,7 @@ const PageManager = ({ routeId, navigate, onDirtyChange }: SectionProps) => {
     return (
       <div>
         <div className="mb-1.5 flex items-center justify-between gap-2">
-          <span className="text-sm font-medium text-slate-700">
-            {fieldLabel(field)} <span className="ml-1 rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[10px] text-slate-500">{field.key}</span>
-          </span>
+          <span className="text-sm font-medium text-slate-700">{fieldLabel(field)}</span>
           {removeBtn}
         </div>
         {long ? (
@@ -353,17 +369,19 @@ const PageManager = ({ routeId, navigate, onDirtyChange }: SectionProps) => {
         <AdminTable
           rows={rows}
           loading={loading}
-          columns={[{ label: "Page" }, { label: "Address", className: "w-56" }, { label: "Sections", className: "w-28" }, { label: "FAQs", className: "w-24" }]}
+          columns={[{ label: "Page" }, { label: "Address", className: "w-52" }, { label: "Sections", className: "w-24" }, { label: "FAQs", className: "w-20" }, { label: "SEO", className: "w-28" }, { label: "Updated", className: "w-32" }]}
           emptyText={pages.length === 0 ? "No pages configured." : "No pages match your search."}
           search={search}
           onSearch={setSearch}
           searchPlaceholder="Search pages"
           renderRow={(page) => (
             <>
-              <TitleCell title={page.name} onEdit={() => navigate(`/pages/${page.pageId}`)} viewHref={page.path} />
+              <TitleCell thumb={firstImage(page)} title={page.name} onEdit={() => navigate(`/pages/${page.pageId}`)} viewHref={page.path} />
               <td className="py-2.5 pr-4 font-mono text-xs text-slate-500">{page.path}</td>
               <td className="py-2.5 pr-4 text-slate-600">{page.sections.length}</td>
               <td className="py-2.5 pr-4 text-slate-600">{(page.faqs?.length ?? 0) + page.sections.reduce((n, sec) => n + (sec.faqs?.length ?? 0), 0)}</td>
+              <td className="py-2.5 pr-4">{seoBadge(page)}</td>
+              <td className="py-2.5 pr-4 text-slate-500">{page.updatedAt ? formatDate(page.updatedAt) : <span className="text-slate-400">—</span>}</td>
             </>
           )}
         />
@@ -391,91 +409,200 @@ const PageManager = ({ routeId, navigate, onDirtyChange }: SectionProps) => {
     );
   }
 
+  const sections = draft.sections;
+  const activeSection = sections.find((sec) => sec.id === activeSectionId) ?? sections[0] ?? null;
+  const activeIndex = activeSection ? sections.findIndex((sec) => sec.id === activeSection.id) : -1;
+  const sectionChanged = (id: string) => {
+    const a = draft.sections.find((sec) => sec.id === id);
+    const b = baseline?.sections.find((sec) => sec.id === id);
+    return JSON.stringify(a) !== JSON.stringify(b);
+  };
+  const sectionSummary = (sec: DraftSection) => {
+    if (sec.type === "faq") return `${sec.faqs?.length ?? 0} question${(sec.faqs?.length ?? 0) === 1 ? "" : "s"}`;
+    const n = sec.fields?.length ?? 0;
+    const imgs = sec.fields?.filter((f) => f.key === "image").length ?? 0;
+    return `${n} field${n === 1 ? "" : "s"}${imgs ? ` · ${imgs} image${imgs === 1 ? "" : "s"}` : ""}`;
+  };
+  const sectionHeadline = (sec: DraftSection) => sec.fields?.find((f) => (f.key === "h1" || f.key === "h2") && f.value.trim())?.value ?? "";
+  const totalFaqs = draft.faqs.length + sections.reduce((n, sec) => n + (sec.faqs?.length ?? 0), 0);
+  const tabs: { id: typeof tab; label: string; icon: typeof Type; count?: number }[] = [
+    { id: "content", label: "Content", icon: Type, count: sections.length },
+    { id: "seo", label: "SEO", icon: Search },
+    { id: "faqs", label: "FAQs", icon: HelpCircle, count: draft.faqs.length },
+    { id: "advanced", label: "Advanced", icon: Settings2 },
+  ];
+  const go = (index: number) => {
+    const sec = sections[index];
+    if (sec) {
+      setActiveSectionId(sec.id);
+      setTab("content");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
+
   return (
     <>
       <Breadcrumb backLabel="Pages" onBack={() => navigate("/pages")} current={draft.name} dirty={dirty} />
       <EditorLayout
         main={
           <>
-            {draft.sections.map((section) => (
-              <Panel
-                key={section.id}
-                id={`section-${section.id}`}
-                title={section.title}
-                actions={
-                  section.type === "faq" ? undefined : (
-                    <button type="button" onClick={() => addSectionField(section.id, "image")} className="text-xs font-semibold text-accent hover:underline">
-                      + Add image
+            <div className="rounded-md border border-slate-200 bg-white shadow-sm">
+              <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
+                <div className="min-w-0">
+                  <h2 className="font-display text-2xl font-bold text-slate-900">{draft.name}</h2>
+                  <p className="mt-0.5 text-xs text-slate-500">
+                    www.fotolaminate.com<span className="text-slate-700">{draft.path}</span> · {sections.length} section{sections.length === 1 ? "" : "s"} · {totalFaqs} FAQ{totalFaqs === 1 ? "" : "s"}
+                  </p>
+                </div>
+              </div>
+              <nav className="flex gap-1 overflow-x-auto border-t border-slate-200 px-3" aria-label="Page editor tabs">
+                {tabs.map(({ id, label, icon: Icon, count }) => {
+                  const active = tab === id;
+                  return (
+                    <button
+                      key={id}
+                      type="button"
+                      onClick={() => setTab(id)}
+                      className={`-mb-px inline-flex items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-2.5 text-sm font-medium ${active ? "border-accent text-accent" : "border-transparent text-slate-600 hover:text-slate-900"}`}
+                      aria-current={active ? "page" : undefined}
+                    >
+                      <Icon size={15} aria-hidden="true" /> {label}
+                      {count !== undefined ? <span className={`rounded-full px-1.5 text-[11px] ${active ? "bg-accent/10 text-accent" : "bg-slate-100 text-slate-500"}`}>{count}</span> : null}
                     </button>
-                  )
-                }
-              >
-                {section.type === "faq" ? (
-                  <FaqField
-                    faqs={section.faqs ?? []}
-                    onChange={(faqs) =>
-                      updateDraft((current) => ({
-                        ...current,
-                        sections: current.sections.map((sec) => (sec.id === section.id ? { ...sec, faqs } : sec)),
-                      }))
-                    }
-                    label="Questions"
-                  />
-                ) : section.fields && section.fields.length > 0 ? (
-                  section.fields.map((field, index) => <div key={`${section.id}-${index}`}>{renderFieldInput(section.id, field, index)}</div>)
-                ) : (
-                  <p className="text-sm text-slate-500">This section has no editable fields.</p>
-                )}
+                  );
+                })}
+              </nav>
+            </div>
+
+            {tab === "content" ? (
+              activeSection ? (
+                <Panel
+                  key={activeSection.id}
+                  id={`section-${activeSection.id}`}
+                  title={`${activeIndex + 1}. ${activeSection.title}`}
+                  actions={
+                    activeSection.type === "faq" ? undefined : (
+                      <button type="button" onClick={() => addSectionField(activeSection.id, "image")} className="inline-flex items-center gap-1 text-xs font-semibold text-accent hover:underline">
+                        <ImageIcon size={14} aria-hidden="true" /> Add image
+                      </button>
+                    )
+                  }
+                >
+                  {activeSection.type === "faq" ? (
+                    <FaqField
+                      faqs={activeSection.faqs ?? []}
+                      onChange={(faqs) =>
+                        updateDraft((current) => ({
+                          ...current,
+                          sections: current.sections.map((sec) => (sec.id === activeSection.id ? { ...sec, faqs } : sec)),
+                        }))
+                      }
+                      label="Questions"
+                    />
+                  ) : activeSection.fields && activeSection.fields.length > 0 ? (
+                    <>
+                      {activeSection.fields.filter((f) => f.key !== "image").map((field) => {
+                        const index = activeSection.fields!.indexOf(field);
+                        return <div key={`${activeSection.id}-${index}`}>{renderFieldInput(activeSection.id, field, index)}</div>;
+                      })}
+                      {activeSection.fields.some((f) => f.key === "image") ? (
+                        <div className="grid gap-4 border-t border-slate-100 pt-5 sm:grid-cols-2">
+                          {activeSection.fields.filter((f) => f.key === "image").map((field) => {
+                            const index = activeSection.fields!.indexOf(field);
+                            return <div key={`${activeSection.id}-${index}`}>{renderFieldInput(activeSection.id, field, index)}</div>;
+                          })}
+                        </div>
+                      ) : null}
+                    </>
+                  ) : (
+                    <p className="text-sm text-slate-500">This section has no editable fields.</p>
+                  )}
+                  <div className="flex items-center justify-between border-t border-slate-100 pt-4">
+                    <button type="button" disabled={activeIndex <= 0} onClick={() => go(activeIndex - 1)} className={`${btnSecondary} disabled:opacity-40`}>
+                      <ChevronLeft size={15} aria-hidden="true" /> {sections[activeIndex - 1]?.title ?? "Previous"}
+                    </button>
+                    <span className="text-xs text-slate-400">
+                      {activeIndex + 1} / {sections.length}
+                    </span>
+                    <button type="button" disabled={activeIndex >= sections.length - 1} onClick={() => go(activeIndex + 1)} className={`${btnSecondary} disabled:opacity-40`}>
+                      {sections[activeIndex + 1]?.title ?? "Next"} <ChevronRight size={15} aria-hidden="true" />
+                    </button>
+                  </div>
+                </Panel>
+              ) : (
+                <Panel title="Content">
+                  <p className="text-sm text-slate-500">This page has no editable sections.</p>
+                </Panel>
+              )
+            ) : null}
+
+            {tab === "seo" ? (
+              <Panel title="Search engine listing" id="section-seo">
+                <SeoPreview title={draft.seo.title} description={draft.seo.description} path={draft.path} />
+                <Field label="SEO title" counter={{ value: draft.seo.title.trim().length, ideal: [50, 60] }}>
+                  <input type="text" value={draft.seo.title} onChange={(e) => updateDraft((current) => ({ ...current, seo: { ...current.seo, title: e.target.value } }))} className={inputCls} />
+                </Field>
+                <Field label="SEO description" counter={{ value: draft.seo.description.trim().length, ideal: [140, 160] }}>
+                  <textarea rows={3} value={draft.seo.description} onChange={(e) => updateDraft((current) => ({ ...current, seo: { ...current.seo, description: e.target.value } }))} className={textareaCls} />
+                </Field>
+                <Field label="Keywords" hint="Separate with commas.">
+                  <input type="text" value={draft.keywordString} onChange={(e) => updateDraft((current) => ({ ...current, keywordString: e.target.value }))} className={inputCls} />
+                </Field>
               </Panel>
-            ))}
+            ) : null}
 
-            <Panel title="SEO" id="section-seo">
-              <SeoPreview title={draft.seo.title} description={draft.seo.description} path={draft.path} />
-              <Field label="SEO title" counter={{ value: draft.seo.title.trim().length, ideal: [50, 60] }}>
-                <input type="text" value={draft.seo.title} onChange={(e) => updateDraft((current) => ({ ...current, seo: { ...current.seo, title: e.target.value } }))} className={inputCls} />
-              </Field>
-              <Field label="SEO description" counter={{ value: draft.seo.description.trim().length, ideal: [140, 160] }}>
-                <textarea rows={3} value={draft.seo.description} onChange={(e) => updateDraft((current) => ({ ...current, seo: { ...current.seo, description: e.target.value } }))} className={textareaCls} />
-              </Field>
-              <Field label="Keywords" hint="Separate with commas.">
-                <input type="text" value={draft.keywordString} onChange={(e) => updateDraft((current) => ({ ...current, keywordString: e.target.value }))} className={inputCls} />
-              </Field>
-            </Panel>
+            {tab === "faqs" ? (
+              <Panel title="Page FAQs" id="section-faqs">
+                <p className="-mt-1 text-xs text-slate-500">Shown at the bottom of the page and sent to Google as FAQ structured data.</p>
+                <FaqField faqs={draft.faqs} onChange={(faqs) => updateDraft((c) => ({ ...c, faqs }))} label="Page-level questions" />
+              </Panel>
+            ) : null}
 
-            <Panel title="Page FAQs" id="section-faqs">
-              <FaqField faqs={draft.faqs} onChange={(faqs) => updateDraft((c) => ({ ...c, faqs }))} label="Page-level questions" />
-            </Panel>
-
-            <Panel title="Structured data (advanced)">
-              <JsonListEditor
-                items={draft.schemas}
-                onChange={(schemas) => updateDraft((c) => ({ ...c, schemas }))}
-                addLabel="Add schema"
-                emptyText="No structured data added."
-                placeholder="Paste JSON or a JSON-LD <script> block"
-              />
-            </Panel>
+            {tab === "advanced" ? (
+              <Panel title="Structured data (advanced)">
+                <p className="-mt-1 text-xs text-slate-500">JSON-LD blocks added to the page head. Leave alone unless you know what you are doing.</p>
+                <JsonListEditor
+                  items={draft.schemas}
+                  onChange={(schemas) => updateDraft((c) => ({ ...c, schemas }))}
+                  addLabel="Add schema"
+                  emptyText="No structured data added."
+                  placeholder="Paste JSON or a JSON-LD <script> block"
+                />
+              </Panel>
+            ) : null}
           </>
         }
         sidebar={
           <>
-            <PublishBox isNew={false} viewHref={draft.path} onSave={() => void save()} saving={saving} saveLabel="Update page" />
-            <section className="rounded-md border border-slate-200 bg-white p-4 text-sm shadow-sm">
-              <p className="font-semibold text-slate-900">On this page</p>
-              <ul className="mt-2 space-y-0.5">
-                {[...draft.sections.map((sec) => ({ id: sec.id, title: sec.title })), { id: "seo", title: "SEO" }, { id: "faqs", title: `Page FAQs (${draft.faqs.length})` }].map((sec) => (
-                  <li key={sec.id}>
-                    <button
-                      type="button"
-                      onClick={() => document.getElementById(`section-${sec.id}`)?.scrollIntoView({ behavior: "smooth", block: "start" })}
-                      className="block w-full truncate rounded px-2 py-1 text-left text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-                    >
-                      {sec.title}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </section>
+            <PublishBox isNew={false} updatedAt={selectedPage?.updatedAt} viewHref={draft.path} onSave={() => void save()} saving={saving} saveLabel="Update page" />
+            <MetaBox title="Sections">
+              <ol className="-mx-1 max-h-[60vh] space-y-0.5 overflow-y-auto">
+                {sections.map((sec, i) => {
+                  const active = tab === "content" && activeSection?.id === sec.id;
+                  const changed = sectionChanged(sec.id);
+                  const headline = sectionHeadline(sec);
+                  return (
+                    <li key={sec.id}>
+                      <button
+                        type="button"
+                        onClick={() => go(i)}
+                        className={`flex w-full items-start gap-2 rounded px-2 py-1.5 text-left ${active ? "bg-accent/10 text-accent" : "text-slate-700 hover:bg-slate-100"}`}
+                        aria-current={active ? "true" : undefined}
+                      >
+                        <span className={`mt-0.5 w-5 shrink-0 text-right text-xs tabular-nums ${active ? "text-accent" : "text-slate-400"}`}>{i + 1}.</span>
+                        <span className="min-w-0 flex-1">
+                          <span className="flex items-center gap-1.5">
+                            <span className="truncate text-sm font-medium">{sec.title}</span>
+                            {changed ? <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500" title="Unsaved changes" /> : null}
+                          </span>
+                          <span className="block truncate text-[11px] text-slate-500">{headline || sectionSummary(sec)}</span>
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ol>
+            </MetaBox>
           </>
         }
       />

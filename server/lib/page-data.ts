@@ -17,10 +17,10 @@ async function writePageContentListToFile(pages: PageContent[]) {
 }
 
 async function readPageContentListFromDb(): Promise<PageContent[]> {
-  const result = await query<{ content: PageContent }>(
-    "select content from public.pages order by page_id asc",
+  const result = await query<{ content: PageContent; updated_at: string | null }>(
+    "select content, updated_at from public.pages order by page_id asc",
   );
-  return result.rows.map((row) => row.content);
+  return result.rows.map((row) => ({ ...row.content, updatedAt: row.updated_at ?? undefined }));
 }
 
 async function writePageContentListToDb(pages: PageContent[]) {

@@ -35,4 +35,6 @@ export type PageContent = {
   schemas?: unknown[];
   // Optional array of FAQs
   faqs?: PageFAQ[];
+  // Set by the API when read from the database (not stored inside content)
+  updatedAt?: string;
 };
