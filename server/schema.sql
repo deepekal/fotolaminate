@@ -79,3 +79,15 @@ create table if not exists public.pages (
 drop trigger if exists trg_pages_updated_at on public.pages;
 create trigger trg_pages_updated_at before update on public.pages
 for each row execute function public.set_updated_at();
+
+-- Product categories (managed from /dashboard)
+create table if not exists public.product_categories (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  slug text not null,
+  description text,
+  sort_order integer not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create unique index if not exists product_categories_name_key on public.product_categories (lower(name));
